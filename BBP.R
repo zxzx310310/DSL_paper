@@ -84,14 +84,22 @@ popAmount <- 100 #人口數量
 for (i in 1:length(requiredList)) {
   requiredGood <- sample(1:nrow(goodData[goodData$種類==requiredList[i],]), size = 1) #隨機選擇一個每個種類的必要商品
   getIndex <- which(goodData$種類==requiredList[i])[requiredGood] #抓取被選擇的必要商品
-  goodData$Selected[getIndex] <- 1 #將被抓取的商品從0改為1
+  if(goodData$Selected[getIndex] != 1) {
+    goodData$Selected[getIndex] <- 1 #將被抓取的商品從0改為1  
+  } else {
+    i <- i-1 #如果該商品被選過, 則重新迴圈
+  }
 }
 
 for (i in 1:nonRequiredValues) {
   categoryGoods <- sample(nonRequiredList, 1)
   requiredGood <- sample(1:nrow(goodData[goodData$種類==categoryGoods,]), size = 1)
   getIndex <- which(goodData$種類==categoryGoods)[requiredGood]
-  goodData$Selected[getIndex] <- 1 
+  if(goodData$Selected[getIndex] != 1) {
+    goodData$Selected[getIndex] <- 1 
+  } else {
+    i <- i-1 #如果該商品被選過, 則重新迴圈
+  }
 }
 
 
@@ -102,7 +110,9 @@ selectedGood <- goodData[goodData$Selected==1,]
 sum(selectedGood$體積)
 sum(selectedGood$單價)
 
-
+allFitPrice <- unlist(lapply(fitnessAfter, function(x) x$fitPrice)) #拉出所有價格的fit
+min(allFitPrice) #找出最小的數值
+which.min(allFitPrice) #找出最小數值的index
 
 #----Function----
 
@@ -151,28 +161,45 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
   for (i in 1:length(require_goods)) {
     requiredGood <- sample(1:nrow(good_data[good_data$種類==require_goods[i],]), size = 1) #依必要商品的每個類別去隨機挑選出商品
     getIndex <- which(good_data$種類==require_goods[i])[requiredGood] #取得剛才隨機挑選的商品位置
-    good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1
+    if(good_data$Selected[getIndex] != 1) {
+      good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1  
+    } else {
+      i <- i-1 #如果該商品被選過, 則重新迴圈
+    }
   }
   
   for (i in 1:non_require_values) {
     categoryGoods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
     requiredGood <- sample(1:nrow(good_data[good_data$種類==categoryGoods,]), size = 1) #依選擇性商品的類別去隨機挑選出商品
     getIndex <- which(good_data$種類==categoryGoods)[requiredGood] #取得剛才隨機挑選的商品位置
-    good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1
+    if(good_data$Selected[getIndex] != 1) {
+      good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1  
+    } else {
+      i <- i-1 #如果該商品被選過, 則重新迴圈
+    }
   }
   selectedGood <- good_data[good_data$Selected==1,] #將所有被選擇的欄位為1的資料拉出
   return(selectedGood) #回傳結果
 }
 
+#計算總重量
+total_Volume <- function(gene_list) {
+  for (i in 1:length(gene_list)) {
+    totalVolume <- sum(gene_list[[i]][[1]]$'體積') #總和每個基因的體積
+    gene_list[[i]]["totalVolume"] <- totalVolume 
+  }
+  return(gene_list)
+}
 
 #價格的適應度方法
 fitness_price <- function(gene_list) {
   for (i in 1:length(gene_list)) {
-    fitPrice <- maxPrice - sum(gene_list[[i]][[1]]$'單價')
-    gene_list[[i]]["fitPrice"] <- fitPrice
+    fitPrice <- maxPrice - sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
+    gene_list[[i]]["fitPrice"] <- fitPrice 
   }
   return(gene_list)
 }
+
 
 
 
@@ -191,6 +218,17 @@ for (i in 1:popAmount) {
   geneList[[i]] <- list(gene)
 }
 
+#計算總體積
+totalGene <- list()
+totalGene <- total_Volume(gene_list = geneList)
+
 #計算價格適應度
 fitnessAfter <- list()
-fitnessAfter <- fitness_price(gene_list = geneList)
+fitnessAfter <- fitness_price(gene_list = totalGene)
+
+#判斷體積是否超過最大限制, 若超過則將該欄位變為NA
+for (i in 1:length(fitnessAfter)) {
+  if(fitnessAfter[[i]]$totalVolume > maxVolume) {
+    fitnessAfter[[i]] <- NA
+  }
+}
