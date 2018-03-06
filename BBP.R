@@ -1,4 +1,4 @@
-sourceData <- read.csv(file = "../assets/StoreData.csv")
+sourceData <- read.csv(file = "assets/StoreData.csv")
 goodData <- sourceData
 
 #新增被選擇欄位
