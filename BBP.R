@@ -22,7 +22,7 @@ nonRequiredValues <- 5 #選擇性商品的數量
 popAmount <- 100 #人口數量
 
 
-#----測試----
+#----單方測試----
 #隨機選擇必要商品(單方執行)-1
 # requiredGood <- sample(1:nrow(goodData[goodData$種類=="油",]), size = 1)
 # getIndex <- which(goodData$種類=="油")[requiredGood]
@@ -102,17 +102,36 @@ for (i in 1:nonRequiredValues) {
   }
 }
 
+crossOverList <- fitnessAfter #先將資料移轉給另外一個變數
+for (i in 1:length(crossOverList)) {
+  crossOverList[[i]]["corssOverState"] <- 0 #因所有基因都尚未被交配, 所以給0作為代表
+}
+for (i in 1:2) {
+  selected <- sample(crossOverList, 2)
+  
+  selected[[1]]$corssOverState <- 1 #因被選擇的基因被交配, 所以給1作為代表
+  selected[[2]]$corssOverState <- 1 #因被選擇的基因被交配, 所以給1作為代表
+}
 
-#檢驗已被選擇的商品
-goodData[goodData$Selected==1,]
+#----檢驗區----
+
+
+goodData[goodData$Selected==1,] #檢驗已被選擇的商品
 
 selectedGood <- goodData[goodData$Selected==1,]
 sum(selectedGood$體積)
 sum(selectedGood$單價)
 
-allFitPrice <- unlist(lapply(fitnessAfter, function(x) x$fitPrice)) #拉出所有價格的fit
+allFitPrice <- unlist(lapply(fitnessAfter, function(x) x$fitPrice)) #拉出所有價格的fitness
 min(allFitPrice) #找出最小的數值
 which.min(allFitPrice) #找出最小數值的index
+
+#檢測是否有違反體積限制而變為NA值的資料
+if(length(which(is.na(fitnessAfter))) != 0) {
+  paste("有違反體積限制的基因數為: ", length(which(is.na(fitnessAfter))))
+} else {
+  paste("所有基因完全符合體積限制, 共", length(which(!is.na(fitnessAfter))), "個")
+}
 
 #----Function----
 
@@ -208,6 +227,11 @@ cross_over <- function() {
 }
 
 
+#----暫存區----
+x <- "C12-11"
+strsplit(x, "(?<=[A-Za-z])|(-)", perl = TRUE)
+
+
 
 #----執行----
 
@@ -232,3 +256,4 @@ for (i in 1:length(fitnessAfter)) {
     fitnessAfter[[i]] <- NA
   }
 }
+
