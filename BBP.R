@@ -21,6 +21,9 @@ nonRequiredValues <- 5 #選擇性商品的數量
 
 popAmount <- 20 #人口數量
 
+crossRate <- 0.7
+mutationRate <- 0.01
+
 
 #----單方測試----
 #隨機選擇必要商品(單方執行)-1
@@ -267,13 +270,13 @@ cross_over <- function(gene_list, require_goods, non_require_values) {
   }
   
   get_chrom_length <- length(require_goods)+non_require_values #取得染色體長度
-  
+
   if (length(which(!is.na(gene_list)))%%2==0) {
     #若基因數量為雙數時開始執行
-    
+
     for (i in 1:length(gene_list)/2) {
       get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState))
-      
+
       if (length(get_cross_state==1)!=length(gene_list)) {
         get_index <- sample(which(get_cross_state!=1),2)
         rnd <- sort(sample(get_chrom_length, 2)) #隨機選擇切割地方(採雙點交配)
@@ -284,9 +287,9 @@ cross_over <- function(gene_list, require_goods, non_require_values) {
         tempChrom_A[[1]][c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[2]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的商品給第一個基因
         tempChrom_B[[1]][c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[1]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
         gene_list[[get_index[1]]]$'crossState' <- 1
-        gene_list[[get_index[2]]]$'crossState' <- 1  
+        gene_list[[get_index[2]]]$'crossState' <- 1
       }
-    }      
+    }
   }
   return(gene_list)
 }
@@ -326,5 +329,5 @@ for (i in 1:length(fitnessAfter)) {
 }
 
 crossAfter <- list()
-crossAfter <- cross_over(gene_list = fitnessAfter)
+crossAfter <- cross_over(gene_list = fitnessAfter, require_goods = requiredList, non_require_values = nonRequiredValues)
 
