@@ -19,7 +19,7 @@ nonRequiredValues <- 5 #選擇性商品的數量
 #InstNoodlesQt <- 3 #泡麵數量
 #snackQt <- 4 #零食數量
 
-popAmount <- 100 #人口數量
+popAmount <- 20 #人口數量
 
 
 #----單方測試----
@@ -133,6 +133,20 @@ if(length(which(is.na(fitnessAfter))) != 0) {
   paste("所有基因完全符合體積限制, 共", length(which(!is.na(fitnessAfter))), "個")
 }
 
+getChromLength <- length(requiredList)+nonRequiredValues #取得染色體長度
+rnd <- sort(sample(getChromLength, 2)) #隨機選擇切割地方(採雙點交配)
+fitnessAfter[[1]]["crossState"] <- 0
+fitnessAfter[[2]]["crossState"] <- 0
+tempChrom_A <- fitnessAfter[[1]] #先將染色體給暫時變數A
+tempChrom_B <- fitnessAfter[[2]] #先將染色體給暫時變數B
+tempChrom_A$chromosome[c(rnd[1]+1):rnd[2]] <- fitnessAfter[[2]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+tempChrom_B$chromosome[c(rnd[1]+1):rnd[2]] <- fitnessAfter[[1]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+tempChrom_A[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[2]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的商品給第一個基因
+tempChrom_B[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[1]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
+fitnessAfter[[1]]["crossState"] <- 1
+fitnessAfter[[2]]["crossState"] <- 1
+
+
 #----Function----
 
 #初始人口方法(素食選擇)
@@ -177,6 +191,11 @@ if(length(which(is.na(fitnessAfter))) != 0) {
 
 #初始人口方法(無素食, 選擇性商品為參數)
 initial_pop <- function(good_data, require_goods, non_require_goods, non_require_values) {
+  #good_data: 原始商品資料集
+  #require_goods: 必要性的商品清單
+  #non_require_goods: 不必要性的商品清單
+  #non_require_values: 不必要性的商品數量
+  
   for (i in 1:length(require_goods)) {
     requiredGood <- sample(1:nrow(good_data[good_data$種類==require_goods[i],]), size = 1) #依必要商品的每個類別去隨機挑選出商品
     getIndex <- which(good_data$種類==require_goods[i])[requiredGood] #取得剛才隨機挑選的商品位置
@@ -201,8 +220,21 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
   return(selectedGood) #回傳結果
 }
 
+#編碼染色體
+create_chromosome <- function(gene_list) {
+  #gene_list: 被選擇出的基因清單
+  for(i in 1:length(gene_list)) {
+     chromosome <- as.vector(gene_list[[i]][[1]]$'產品代號')
+     gene_list[[i]]["chromosome"] <- list(chromosome) 
+  }
+  return(gene_list)
+}
+
+
 #計算總重量
 total_Volume <- function(gene_list) {
+  #gene_list: 被選擇出的基因清單
+  
   for (i in 1:length(gene_list)) {
     totalVolume <- sum(gene_list[[i]][[1]]$'體積') #總和每個基因的體積
     gene_list[[i]]["totalVolume"] <- totalVolume 
@@ -212,6 +244,8 @@ total_Volume <- function(gene_list) {
 
 #價格的適應度方法
 fitness_price <- function(gene_list) {
+  #gene_list: 被選擇出的基因清單
+  
   for (i in 1:length(gene_list)) {
     fitPrice <- maxPrice - sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
     gene_list[[i]]["fitPrice"] <- fitPrice 
@@ -221,9 +255,40 @@ fitness_price <- function(gene_list) {
 
 
 
-
-cross_over <- function() {
-  #交配
+#交配(雙點交配)
+cross_over <- function(gene_list, require_goods, non_require_values) {
+  #gene_list: 被選擇出的基因清單
+  #require_goods: 必要性的商品清單
+  #non_require_values: 不必要性的商品數量
+  
+  for (i in 1:length(gene_list)) {
+    #先給予交配狀態, 0表示未交配, 1表示已交配
+    gene_list[[i]]["crossState"] <- 0
+  }
+  
+  get_chrom_length <- length(require_goods)+non_require_values #取得染色體長度
+  
+  if (length(which(!is.na(gene_list)))%%2==0) {
+    #若基因數量為雙數時開始執行
+    
+    for (i in 1:length(gene_list)/2) {
+      get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState))
+      
+      if (length(get_cross_state==1)!=length(gene_list)) {
+        get_index <- sample(which(get_cross_state!=1),2)
+        rnd <- sort(sample(get_chrom_length, 2)) #隨機選擇切割地方(採雙點交配)
+        tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
+        tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
+        tempChrom_A$'chromosome'[c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[2]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+        tempChrom_B$'chromosome'[c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[1]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+        tempChrom_A[[1]][c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[2]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的商品給第一個基因
+        tempChrom_B[[1]][c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[1]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
+        gene_list[[get_index[1]]]$'crossState' <- 1
+        gene_list[[get_index[2]]]$'crossState' <- 1  
+      }
+    }      
+  }
+  return(gene_list)
 }
 
 
@@ -242,6 +307,9 @@ for (i in 1:popAmount) {
   geneList[[i]] <- list(gene)
 }
 
+#編碼染色體
+geneList <- create_chromosome(gene_list = geneList)
+
 #計算總體積
 totalGene <- list()
 totalGene <- total_Volume(gene_list = geneList)
@@ -256,4 +324,7 @@ for (i in 1:length(fitnessAfter)) {
     fitnessAfter[[i]] <- NA
   }
 }
+
+crossAfter <- list()
+crossAfter <- cross_over(gene_list = fitnessAfter)
 
