@@ -136,6 +136,7 @@ if(length(which(is.na(fitnessAfter))) != 0) {
   paste("所有基因完全符合體積限制, 共", length(which(!is.na(fitnessAfter))), "個")
 }
 
+#交配測試-1
 getChromLength <- length(requiredList)+nonRequiredValues #取得染色體長度
 rnd <- sort(sample(getChromLength, 2)) #隨機選擇切割地方(採雙點交配)
 fitnessAfter[[1]]["crossState"] <- 0
@@ -148,6 +149,12 @@ tempChrom_A[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[2]]$chromosome[c(rnd[1]+1)
 tempChrom_B[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[1]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
 fitnessAfter[[1]]["crossState"] <- 1
 fitnessAfter[[2]]["crossState"] <- 1
+
+
+#交配測試-2
+paste("交配率:", crossRate)
+rndCrossRate <- round(runif(n = 1, min = 0, max = 1),3)
+paste("亂數交配率:", rndCrossRate)
 
 
 #----Function----
@@ -246,19 +253,28 @@ total_Volume <- function(gene_list) {
 }
 
 #價格的適應度方法
-fitness_price <- function(gene_list) {
+fitness_price <- function(gene_list, limt_price) {
   #gene_list: 被選擇出的基因清單
+  #limt_price: 價格最高限制
   
   for (i in 1:length(gene_list)) {
-    fitPrice <- maxPrice - sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
-    gene_list[[i]]["fitPrice"] <- fitPrice 
+    sumPrice <- sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
+    reuslt <- (limt_price-sumPrice)/limt_price
+    if (reuslt==0 || reuslt>=0 && reuslt<=0.1) {
+      reuslt <- reuslt + 1
+    } else if (reuslt>0.1 && reuslt<=0.5) {
+      reuslt <- reuslt + 2
+    } else {
+      reuslt <- reuslt + 3
+    }
+    gene_list[[i]]["fitPrice"] <- reuslt 
   }
   return(gene_list)
 }
 
 
 
-#交配(雙點交配)
+#交配(雙點交配)-錯誤, 未考慮到適應函數值及未採用菁英政策和交配率
 cross_over <- function(gene_list, require_goods, non_require_values) {
   #gene_list: 被選擇出的基因清單
   #require_goods: 必要性的商品清單
@@ -277,7 +293,7 @@ cross_over <- function(gene_list, require_goods, non_require_values) {
     for (i in 1:length(gene_list)/2) {
       get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState))
 
-      if (length(get_cross_state==1)!=length(gene_list)) {
+      if (length(get_cross_state==1)==length(gene_list)) {
         get_index <- sample(which(get_cross_state!=1),2)
         rnd <- sort(sample(get_chrom_length, 2)) #隨機選擇切割地方(採雙點交配)
         tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
@@ -287,12 +303,21 @@ cross_over <- function(gene_list, require_goods, non_require_values) {
         tempChrom_A[[1]][c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[2]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的商品給第一個基因
         tempChrom_B[[1]][c(rnd[1]+1):rnd[2]] <- gene_list[[get_index[1]]]$'chromosome'[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
         gene_list[[get_index[1]]]$'crossState' <- 1
-        gene_list[[get_index[2]]]$'crossState' <- 1
+        gene_list[[get_index[2]]]$'crossState' <- 1  
       }
     }
   }
   return(gene_list)
 }
+
+
+
+#交配(雙點交配)-需考慮適應函數值(包含懲罰執)和採用菁英政策及交配率
+cross_over <- function() {
+  
+}
+
+
 
 
 #----暫存區----
@@ -318,8 +343,8 @@ totalGene <- list()
 totalGene <- total_Volume(gene_list = geneList)
 
 #計算價格適應度
-fitnessAfter <- list()
-fitnessAfter <- fitness_price(gene_list = totalGene)
+fitnessPriceAfter <- list()
+fitnessPriceAfter <- fitness_price(gene_list = totalGene, limt_price = maxPrice)
 
 #判斷體積是否超過最大限制, 若超過則將該欄位變為NA
 for (i in 1:length(fitnessAfter)) {
