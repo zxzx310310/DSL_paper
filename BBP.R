@@ -252,20 +252,20 @@ total_Volume <- function(gene_list) {
   return(gene_list)
 }
 
-#價格的適應度方法
+#價格的適應度方法(已加入懲罰值)
 fitness_price <- function(gene_list, limt_price) {
   #gene_list: 被選擇出的基因清單
   #limt_price: 價格最高限制
   
   for (i in 1:length(gene_list)) {
     sumPrice <- sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
-    reuslt <- (limt_price-sumPrice)/limt_price
-    if (reuslt==0 || reuslt>=0 && reuslt<=0.1) {
-      reuslt <- reuslt + 1
+    reuslt <- (limt_price-sumPrice)/limt_price #將價格適應度算出
+    if (reuslt==0 || reuslt>0 && reuslt<=0.1) {
+      reuslt <- reuslt + 1 #若適應度等於0或大於0並小於等於0.1就給予懲罰值1, e.g. (1200-1123)/1200=0.06416667, 愈接近0表示價格差距越小
     } else if (reuslt>0.1 && reuslt<=0.5) {
-      reuslt <- reuslt + 2
+      reuslt <- reuslt + 2 #若適應度大於0.1並小於等於0.5就給予懲罰值2
     } else {
-      reuslt <- reuslt + 3
+      reuslt <- reuslt + 3 #剩下結果將給予懲罰值3
     }
     gene_list[[i]]["fitPrice"] <- reuslt 
   }
