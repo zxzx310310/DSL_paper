@@ -21,8 +21,8 @@ nonRequiredValues <- 5 #選擇性商品的數量
 
 popAmount <- 20 #人口數量
 
-crossRate <- 0.7
-mutationRate <- 0.01
+crossRate <- 0.7 #交配率
+mutationRate <- 0.01 #突變率
 
 
 #----單方測試----
@@ -152,10 +152,45 @@ fitnessAfter[[2]]["crossState"] <- 1
 
 
 #交配測試-2
-paste("交配率:", crossRate)
-rndCrossRate <- round(runif(n = 1, min = 0, max = 1),3)
-paste("亂數交配率:", rndCrossRate)
+paste("交配率:", crossRate) #顯示交配率
+for (i in 1:length(fitnessPriceAfter)) {
+  #先給予交配狀態, 0表示未交配, 1表示已交配
+  fitnessPriceAfter[[i]]["crossState"] <- 0
+}
+getChromLength <- length(requiredList)+nonRequiredValues #取得染色體長度
 
+getCrossState <- unlist(lapply(fitnessPriceAfter, function(x) x$crossState)) #給定目前交配狀態
+paste("目前交配狀態為:", getCrossState) #顯示交配狀態
+if (length(getCrossState==1)==length(fitnessPriceAfter)) {
+  getIndex <- as.vector(sample(which(getCrossState!=1),2)) #抽取要被交配的基因
+  paste("被抽取到的基因為:", getIndex[1], ",", getIndex[2]) #顯示被抽取到基因的index
+  rndCrossRate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
+  paste("亂數交配率:", rndCrossRate) #顯示亂數的交配率
+
+  if(rndCrossRate<=crossRate) {
+    #亂數小於等於交配率, 則進行交配
+  
+    divideIndex <- sort(as.vector(sample(getChromLength, 2))) #隨機選擇切割地方(採雙點交配)
+    paste("分割染色體的位置為:", divideIndex[1], ",", divideIndex[2]) #顯示需要被分割的位置
+    
+    tempChrom_A <- fitnessPriceAfter[[getIndex[1]]] #先將染色體給暫時變數A
+    tempChrom_B <- fitnessPriceAfter[[getIndex[2]]] #先將染色體給暫時變數B
+    tempChrom_A$'chromosome'[c(divideIndex[1]+1):divideIndex[2]] <- fitnessPriceAfter[[getIndex[2]]]$'chromosome'[c(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+    tempChrom_B$'chromosome'[c(divideIndex[1]+1):divideIndex[2]] <- fitnessPriceAfter[[getIndex[1]]]$'chromosome'[c(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+    tempChrom_A[[1]][c(divideIndex[1]+1):divideIndex[2]] <- fitnessPriceAfter[[getIndex[2]]]$'chromosome'[c(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第二個基因切割的商品給第一個基因
+    tempChrom_B[[1]][c(divideIndex[1]+1):divideIndex[2]] <- fitnessPriceAfter[[getIndex[1]]]$'chromosome'[c(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
+    fitnessPriceAfter[[getIndex[1]]]$'crossState' <- 1
+    fitnessPriceAfter[[getIndex[2]]]$'crossState' <- 1 
+    print("交配囉!")
+  } else {
+    #亂數大於交配率, 則不進行交配
+    fitnessPriceAfter[[getIndex[1]]]$'crossState' <- 1
+    fitnessPriceAfter[[getIndex[2]]]$'crossState' <- 1 
+    print("沒交配!")
+  }
+} else {
+  print("所有基因皆已交配!")
+}
 
 #----Function----
 
