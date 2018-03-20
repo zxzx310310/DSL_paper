@@ -25,6 +25,7 @@ popAmount <- 20 #人口數量
 crossRate <- 0.7 #交配率
 mutationRate <- 0.01 #突變率
 eliteValues <- 1 #菁英數量
+maxGen <- 100 #世代次數
 
 
 #----單方測試----
@@ -589,6 +590,8 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
     #將最好的適應函數設定為精英值, 並放入新的群組
     new_pop[[last_list[z]]]$'elite' <- 1
     result_pop[[z]] <- new_pop[[last_list[z]]] #將菁英的基因放入新的族群中
+    print(paste("菁英編碼:", unlist(result_pop[[z]]$'chromosome')))
+    print(paste("菁英的總體適應函數:", result_pop[[z]]$'totalFit'))
   }
   
   for (k in (length(elite_values)+1):pop_amount) {
@@ -665,3 +668,43 @@ mutationAfter <- fitness_total(gene_list = mutationAfter)
 
 #合併此代與下一代基因, 並採用菁英政策和產出新的族群
 newPopulation <- new_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
+
+#fitnessTotalAfter: 第一代族群
+#mutationAfter: 下一代族群
+#newPopulation: 為最新的族群
+
+
+# crossAfter <- list()
+# crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
+# 
+# mutationAfter <- list()
+# mutationAfter <- mutation_FN(gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData)
+# 
+# mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
+# mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
+# mutationAfter <- fitness_total(gene_list = mutationAfter)
+# 
+# newPopulation <- new_population(first_gene = newPopulation, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
+
+gen_values_best <- vector() #紀錄最好的基因總體適應函數
+gen_values_loss <- vector() #紀錄最差的基因總體適應函數
+for (i in 1:maxGen) {
+  #開始進行基因演算
+  crossAfter <- list()
+  crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
+  
+  mutationAfter <- list()
+  mutationAfter <- mutation_FN(gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData)
+  
+  mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
+  mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
+  mutationAfter <- fitness_total(gene_list = mutationAfter)
+  
+  newPopulation <- new_population(first_gene = newPopulation, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
+  
+  gen_values_best[i] <- newPopulation[[1]]$totalFit
+  gen_values_loss[i] <- newPopulation[[20]]$totalFit
+  print(paste("============第", i, "代============"))
+}
+
+plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
