@@ -218,8 +218,8 @@ for(i in 1:20) {
 
 
 #選擇並菁英政策
-newPop <- fitnessTotalAfter
-newPop <- append(newPop, mutationAfter)
+newPop <- fitnessTotalAfter #將此代基因放入新的變數
+newPop <- append(newPop, mutationAfter) #將下代基因加入變數
 
 for (i in 1:length(newPop)) {
   #產生菁英狀態
@@ -228,20 +228,16 @@ for (i in 1:length(newPop)) {
 
 resultPop <- list() #初始最終結果族群清單
 
-lastList <- head(order(unlist(lapply(newPop, function(x) x$totalFit)), decreasing = FALSE), popAmount)
+lastList <- head(order(unlist(lapply(newPop, function(x) x$totalFit)), decreasing = FALSE), popAmount) #取得popAmount(數量)的族群
 for (z in 1:length(eliteValues)) {
   #將最好的適應函數設定為精英值, 並放入新的群組
   newPop[[lastList[z]]]$'elite' <- 1
-  resultPop[[z]] <- append(resultPop, newPop[[lastList[z]]]) #將菁英的基因放入新的族群中
+  resultPop[[z]] <- newPop[[lastList[z]]] #將菁英的基因放入新的族群中
 }
-
-#last_gene_length <- pop_amount - elite_values #計算出剩下所需要的基因長度
-
 
 for (k in (length(eliteValues)+1):popAmount) {
   #將剩下的基因加入到族群
-  #resultPop[[k]] <- append(resultPop, newPop[[lastList[k]]])
-  #order(unlist(lapply(newPop, function(x) x$totalFit)), decreasing = FALSE)[(length(eliteValues)+1):popAmount]
+  resultPop[[k]] <- newPop[[lastList[k]]]
 }
 
 
@@ -577,43 +573,30 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
   #elite_values: 菁英數量
   #pop_amount: 族群大小
   
-  # new_pop <- first_gene
-  # new_pop <- append(new_pop, second_gene)
-  # 
-  # result_pop <- list() #初始最終結果族群清單
-  # pop_list <- head(order(unlist(lapply(new_pop, function(x) x$totalFit)), decreasing = FALSE),pop_amount)
-  # for (i in 1:length(pop_list)) {
-  #   result_pop <- append(result_pop[i], new_pop[[pop_list[i]]])
-  #   result_pop[[i]]["elite"] <- 0
-  #   
-  # }
+  new_pop <- list()
+  new_pop <- first_gene #將此代基因放入新的變數
+  new_pop <- append(new_pop, second_gene) #將下代基因加入變數
   
-  new_pop <- first_gene
-  new_pop <- append(new_pop, second_gene)
-
   for (i in 1:length(new_pop)) {
     #產生菁英狀態
     new_pop[[i]]["elite"] <- 0 #將菁英狀態皆設定為0, 0表示不是菁英值; 1表示被挑選為菁英值
   }
-
+  
   result_pop <- list() #初始最終結果族群清單
-
-  last_list <- head(order(unlist(lapply(new_pop, function(x) x$totalFit)), decreasing = FALSE), pop_amount)
+  
+  last_list <- head(order(unlist(lapply(new_pop, function(x) x$totalFit)), decreasing = FALSE), pop_amount) #取得popAmount(數量)的族群
   for (z in 1:length(elite_values)) {
     #將最好的適應函數設定為精英值, 並放入新的群組
     new_pop[[last_list[z]]]$'elite' <- 1
-    result_pop <- append(result_pop, new_pop[[last_list[z]]]) #將菁英的基因放入新的族群中
+    result_pop[[z]] <- new_pop[[last_list[z]]] #將菁英的基因放入新的族群中
   }
-
-  #last_gene_length <- pop_amount - elite_values #計算出剩下所需要的基因長度
-
+  
   for (k in (length(elite_values)+1):pop_amount) {
-    result_pop <- append(result_pop, new_pop[[elite_list[z]]])
-    order(unlist(lapply(newPop, function(x) x$totalFit)), decreasing = FALSE)[(length(eliteValues)+1):popAmount]
+    #將剩下的基因加入到族群
+    result_pop[[k]] <- new_pop[[last_list[k]]]
   }
   
-  
-  return(new_pop)
+  return(result_pop)
 }
 
 #選擇方法(菁英政策)
