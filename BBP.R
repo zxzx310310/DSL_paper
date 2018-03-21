@@ -8,19 +8,19 @@ goodData <- cbind(goodData, "Selected" = 0) #新增被選擇欄位
 #----環境參數設定----
 maxVolume <- 52*38*28 #最大箱子體積
 alpha <- 0.9 #體積鬆弛因子
-maxPrice <- 1200 #最大金額
+maxPrice <- 1500 #最大金額
 requiredList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食") #必需品商品
 nonRequiredList <- c("沖泡", "罐頭", "飲品", "泡麵", "零食") #非必需品商品
 #categoryList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食", "沖泡", "罐頭", "飲品", "泡麵", "零食") #必需品商品
 #Vegetarian <- 0 #是否為素食(0為否, 1為是, 3為不限)
 
-nonRequiredValues <- 5 #選擇性商品的數量
+nonRequiredValues <- 20 #選擇性商品的數量
 #canQt <- 2 #罐頭數量
 #drinkQt <- 3 #飲料數量
 #InstNoodlesQt <- 3 #泡麵數量
 #snackQt <- 4 #零食數量
 
-popAmount <- 20 #人口數量
+popAmount <- 100 #人口數量
 
 crossRate <- 0.7 #交配率
 mutationRate <- 0.01 #突變率
@@ -318,6 +318,43 @@ for(i in 1:20) {
 
 
 #初始人口方法(無素食, 選擇性商品為參數)
+# initial_pop <- function(good_data, require_goods, non_require_goods, non_require_values) {
+#   #good_data: 原始商品資料集
+#   #require_goods: 必要性的商品清單
+#   #non_require_goods: 不必要性的商品清單
+#   #non_require_values: 不必要性的商品數量
+#   
+#   for (i in 1:length(require_goods)) {
+#     requiredGood <- sample(1:nrow(good_data[good_data$種類==require_goods[i],]), size = 1) #依必要商品的每個類別去隨機挑選出商品
+#     
+#     repeat {
+#       #重複篩選必要性商品, 直到沒有與原本商品相同
+#       getIndex <- which(good_data$種類==require_goods[i])[requiredGood] #取得剛才隨機挑選的商品位置
+#       if(good_data$Selected[getIndex] != 1) {
+#         good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1  
+#         break
+#       }
+#     }
+#   }
+#   
+#   for (i in 1:non_require_values) {
+#     categoryGoods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
+#     requiredGood <- sample(1:nrow(good_data[good_data$種類==categoryGoods,]), size = 1) #依選擇性商品的類別去隨機挑選出商品
+#     
+#     repeat {
+#       #重複篩選選擇性商品, 直到沒有與原本商品相同
+#       getIndex <- which(good_data$種類==categoryGoods)[requiredGood] #取得剛才隨機挑選的商品位置
+#       if(good_data$Selected[getIndex] != 1) {
+#         good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1 
+#         break
+#       }
+#     }
+#   }
+#   selectedGood <- good_data[good_data$Selected==1,] #將所有被選擇的欄位為1的資料拉出
+#   return(selectedGood) #回傳結果
+# }
+
+#初始人口方法2(無素食, 選擇性商品為參數)
 initial_pop <- function(good_data, require_goods, non_require_goods, non_require_values) {
   #good_data: 原始商品資料集
   #require_goods: 必要性的商品清單
@@ -325,34 +362,19 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
   #non_require_values: 不必要性的商品數量
   
   for (i in 1:length(require_goods)) {
-    requiredGood <- sample(1:nrow(good_data[good_data$種類==require_goods[i],]), size = 1) #依必要商品的每個類別去隨機挑選出商品
-    
-    repeat {
-      #重複篩選必要性商品, 直到沒有與原本商品相同
-      getIndex <- which(good_data$種類==require_goods[i])[requiredGood] #取得剛才隨機挑選的商品位置
-      if(good_data$Selected[getIndex] != 1) {
-        good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1  
-        break
-      }
-    }
+    get_index <- sample(which(good_data$種類==require_goods[i] & good_data$Selected!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
+    good_data$Selected[get_index] <- 1 #將被選擇的欄位改為1    
   }
   
   for (i in 1:non_require_values) {
-    categoryGoods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
-    requiredGood <- sample(1:nrow(good_data[good_data$種類==categoryGoods,]), size = 1) #依選擇性商品的類別去隨機挑選出商品
-    
-    repeat {
-      #重複篩選選擇性商品, 直到沒有與原本商品相同
-      getIndex <- which(good_data$種類==categoryGoods)[requiredGood] #取得剛才隨機挑選的商品位置
-      if(good_data$Selected[getIndex] != 1) {
-        good_data$Selected[getIndex] <- 1 #將被選擇的欄位改為1 
-        break
-      }
-    }
+    category_goods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
+    get_index <- sample(which(good_data$種類==category_goods & good_data$Selected!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
+    good_data$Selected[get_index] <- 1 #將被選擇的欄位改為1 
   }
-  selectedGood <- good_data[good_data$Selected==1,] #將所有被選擇的欄位為1的資料拉出
-  return(selectedGood) #回傳結果
+  selected_good <- good_data[good_data$Selected==1,] #將所有被選擇的欄位為1的資料拉出
+  return(selected_good) #回傳結果
 }
+
 
 #編碼染色體
 create_chromosome <- function(gene_list) {
