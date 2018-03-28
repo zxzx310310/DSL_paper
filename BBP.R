@@ -24,7 +24,7 @@ nonRequiredValues <- 13 #選擇性商品的數量
 popAmount <- 100 #人口數量
 
 crossRate <- 0.7 #交配率
-mutationRate <- 0.9 #突變率
+mutationRate <- 0.01 #突變率
 eliteValues <- 1 #菁英數量
 maxGen <- 100 #世代次數
 
@@ -743,6 +743,9 @@ mutation_FN <- function(gene_list, mutation_rate, require_goods, non_require_val
           break
         }
         print(paste("商品重複且重量超過:", sum_weight, "<", limit_weight))
+        mutation_index <- as.numeric(sample(get_chrom_length, 1)) #隨機取得要突變的位置
+        mutation_category <- as.character(temp_list[[i]][[1]][mutation_index,]$'種類') #取得基因中要被突變的染色體商品種類
+        mutation_list <- soure_data[soure_data$'種類'==mutation_category,] #取得原始資料中符合要被突變的商品種類
       }
       temp_list[[i]][[1]][mutation_index,] <- mutation_list[rnd_mutation_value,] #將商品進行變異
       temp_list[[i]]$'chromosome'[mutation_index] <- as.character(mutation_list[rnd_mutation_value,]$'產品代號') #將基因進行變異
@@ -885,10 +888,10 @@ gen_values_loss <- vector() #紀錄最差的基因總體適應函數
 for (i in 1:maxGen) {
   #開始進行基因演算
   crossAfter <- list()
-  crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
+  crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
   
   mutationAfter <- list()
-  mutationAfter <- mutation_FN(gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData)
+  mutationAfter <- mutation_FN(gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
   
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
   mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
