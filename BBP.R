@@ -450,8 +450,8 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
 create_chromosome <- function(gene_list) {
   #gene_list: 被選擇出的基因清單
   for(i in 1:length(gene_list)) {
-     chromosome <- as.vector(gene_list[[i]][[1]]$'產品代號')
-     gene_list[[i]]["chromosome"] <- list(chromosome) 
+    chromosome <- as.vector(gene_list[[i]][[1]]$'產品代號')
+    gene_list[[i]]["chromosome"] <- list(chromosome) 
   }
   return(gene_list)
 }
@@ -646,7 +646,7 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       tempChrom_B[[1]][(divide_index[1]+1):divide_index[2],] <- gene_list[[get_index[1]]][[1]][(divide_index[1]+1):divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
       tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
       tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
-
+      
       while (tempChrom_A$'totalWeight' > limit_weight || tempChrom_B$'totalWeight' > limit_weight) {
         
         print(paste("重量超過:", tempChrom_A$'totalWeight', "或", tempChrom_B$'totalWeight', ">", limit_weight))
