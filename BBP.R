@@ -30,8 +30,9 @@ maxVolume <- 52*38*28 #最大箱子體積
 maxPrice <- 1500 #最大金額
 maxWeight <- 8000 #最大重量
 exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 2) #將要剔除的品牌
-nonRequiredValues <- 15 #選擇性商品的數量
-
+nonRequiredValues <- 10 #選擇性商品的數量
+#dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
+dietHabit <- "素食"
 
 
 #----單方測試----
@@ -285,12 +286,27 @@ for(i in 1:20) {
 
 #剔除品牌的方法
 except_brand <- function(good_data, except_brand_list) {
+  #good_data: 原始商品資料集
+  #except_brand_list: 剔除品牌的名稱
+  
   for (i in 1:length(except_brand_list)) {
-    good_data <- good_data[good_data$'廠牌'!=except_brand_list[i],]
+    good_data <- good_data[good_data$'廠牌'!=except_brand_list[i],] #將要剔除的廠牌移除
   }
   return(good_data)
 }
 
+
+
+diet_select <- function(good_data, diet_habit_list) {
+  #good_data: 原始商品資料集
+  #diet_habit_list: 葷食或素食的選擇
+  
+  if(diet_habit_list=="素食") {
+    good_data <- good_data[good_data$'葷素'==diet_habit_list,] #如果是素食就將屬於素食的產品篩選出來
+  }
+  
+  return(good_data)
+}
 
 
 #初始人口方法(素食選擇)
@@ -826,6 +842,9 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
 #剔除掉不想要的品牌
 goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
 
+#葷素的方法
+goodData <- diet_select(good_data = goodData, diet_habit_list = dietHabit)
+
 #產生初始口(遵照popAmount數量)
 geneList <- list()
 for (i in 1:popAmount) {
@@ -924,4 +943,4 @@ for (i in 1:maxGen) {
 
 plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
 
-resultDF<- newPopulation[[1]][[1]][,-10]
+#resultDF<- newPopulation[[1]][[1]][,-10]
