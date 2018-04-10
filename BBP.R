@@ -6,27 +6,32 @@ goodData <- cbind(goodData, "Selected" = 0) #新增被選擇欄位
 
 
 #----環境參數設定----
-maxVolume <- 52*38*28 #最大箱子體積
 alpha <- 0.9 #體積鬆弛因子
-maxPrice <- 1500 #最大金額
-maxWeight <- 8000 #最大重量
 requiredList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食") #必需品商品
 nonRequiredList <- c("沖泡", "罐頭", "飲品", "泡麵", "零食") #非必需品商品
 #categoryList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食", "沖泡", "罐頭", "飲品", "泡麵", "零食") #必需品商品
 #Vegetarian <- 0 #是否為素食(0為否, 1為是, 3為不限)
 
-nonRequiredValues <- 13 #選擇性商品的數量
 #canQt <- 2 #罐頭數量
 #drinkQt <- 3 #飲料數量
 #InstNoodlesQt <- 3 #泡麵數量
 #snackQt <- 4 #零食數量
 
-popAmount <- 100 #人口數量
+popAmount <- 30 #人口數量
 
 crossRate <- 0.7 #交配率
 mutationRate <- 0.01 #突變率
 eliteValues <- 1 #菁英數量
-maxGen <- 100 #世代次數
+maxGen <- 1000 #世代次數
+
+
+#----使用者需輸入的參數(假設)----
+maxVolume <- 52*38*28 #最大箱子體積
+maxPrice <- 1500 #最大金額
+maxWeight <- 8000 #最大重量
+exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 2) #將要剔除的品牌
+nonRequiredValues <- 15 #選擇性商品的數量
+
 
 
 #----單方測試----
@@ -277,6 +282,16 @@ for(i in 1:20) {
 
 
 #----Function----
+
+#剔除品牌的方法
+except_brand <- function(good_data, except_brand_list) {
+  for (i in 1:length(except_brand_list)) {
+    good_data <- good_data[good_data$'廠牌'!=except_brand_list[i],]
+  }
+  return(good_data)
+}
+
+
 
 #初始人口方法(素食選擇)
 # initial_pop <- function(good_data, category_list) {
@@ -753,7 +768,7 @@ mutation_FN <- function(gene_list, mutation_rate, require_goods, non_require_val
       
       print("完成突變!")
     } else {
-      print(paste(rnd_mutation_rate, "<=", mutation_rate)) #顯示目前突變率
+      print(paste(rnd_mutation_rate, ">=", mutation_rate)) #顯示目前突變率
     }
     print(paste("========第", i, "次========"))
   }
@@ -807,6 +822,9 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
 
 
 #----執行----
+
+#剔除掉不想要的品牌
+goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
 
 #產生初始口(遵照popAmount數量)
 geneList <- list()
@@ -905,3 +923,5 @@ for (i in 1:maxGen) {
 }
 
 plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
+
+resultDF<- newPopulation[[1]][[1]][,-10]
