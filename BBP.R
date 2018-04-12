@@ -17,12 +17,12 @@ nonRequiredList <- c("沖泡", "罐頭", "飲品", "泡麵", "零食") #非必�
 #InstNoodlesQt <- 3 #泡麵數量
 #snackQt <- 4 #零食數量
 
-popAmount <- 30 #人口數量
+popAmount <- 100 #人口數量
 
 crossRate <- 0.7 #交配率
 mutationRate <- 0.01 #突變率
 eliteValues <- 1 #菁英數量
-maxGen <- 100 #世代次數
+maxGen <- 1000 #世代次數
 
 
 #----使用者需輸入的參數(假設)----
@@ -445,6 +445,7 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
     for (i in 1:length(require_goods)) {
       get_index <- sample(which(temp_good$'種類'==require_goods[i] & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
       while (dim(temp_good[temp_good$'種類'==require_goods[i],])[1]==1) {
+        #若該種類的商品數量等於1, 則重新隨機選擇其他類別
         get_index <- sample(which(temp_good$'種類'==require_goods[i] & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
       }
       temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1    
@@ -643,6 +644,8 @@ fitness_total <- function(gene_list) {
 
 #交配(雙點交配)-需考慮適應函數值(包含懲罰執)、交配率和重量限制
 cross_over <- function(gene_list, require_goods, non_require_values, cross_rate, limit_weight) {
+  temp_list <- gene_list
+  
   for (i in 1:length(gene_list)) {
     #先給予交配狀態, 0表示未交配, 1表示已交配
     gene_list[[i]]["crossState"] <- 0
@@ -653,11 +656,13 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
   for(i in 1:c(length(gene_list)/2)){
     get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState)) #給定目前交配狀態
     rnd_cross_rate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
+    get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
+    
+    loop_value <- 0
     
     if(rnd_cross_rate<=cross_rate) {
       #亂數小於等於交配率, 則進行交配
       
-      get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
       divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
       # paste("分割染色體的位置為:", divide_index[1], ",", divide_index[2]) #顯示需要被分割的位置
       
@@ -671,6 +676,7 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
       
       while (tempChrom_A$'totalWeight' > limit_weight || tempChrom_B$'totalWeight' > limit_weight && length(tempChrom_A$chromosome)!=length(unique(tempChrom_A$chromosome)) || length(tempChrom_B$chromosome)!=length(unique(tempChrom_B$chromosome))) {
+        loop_value <- loop_value+1
         
         print(paste("重量超過:", tempChrom_A$'totalWeight', "或", tempChrom_B$'totalWeight', ">", limit_weight, "或 有重複值"))
         
@@ -685,6 +691,11 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
         tempChrom_B[[1]][(divide_index[1]+1):divide_index[2],] <- gene_list[[get_index[1]]][[1]][(divide_index[1]+1):divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
         tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
         tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
+        
+        if(loop_value > 500) {
+          print("已成無窮解, 不進行交配")
+          break
+        }
       }
       
       tempChrom_A$'crossState' <- 1
@@ -949,7 +960,7 @@ for (i in 1:maxGen) {
   gen_values_best[i] <- newPopulation[[1]]$totalFit
   gen_values_loss[i] <- newPopulation[[20]]$totalFit
   print(paste("============第", i, "代============"))
-}
+} 
 
 plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
 
