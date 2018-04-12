@@ -22,7 +22,7 @@ popAmount <- 30 #人口數量
 crossRate <- 0.7 #交配率
 mutationRate <- 0.01 #突變率
 eliteValues <- 1 #菁英數量
-maxGen <- 1000 #世代次數
+maxGen <- 100 #世代次數
 
 
 #----使用者需輸入的參數(假設)----
@@ -444,11 +444,18 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
     
     for (i in 1:length(require_goods)) {
       get_index <- sample(which(temp_good$'種類'==require_goods[i] & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
+      while (dim(temp_good[temp_good$'種類'==require_goods[i],])[1]==1) {
+        get_index <- sample(which(temp_good$'種類'==require_goods[i] & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
+      }
       temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1    
     }
     
     for (i in 1:non_require_values) {
       category_goods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
+      while (dim(temp_good[temp_good$'種類'==category_goods,])[1]==1) {
+        #如果取得到的位置該商品只有一個且已經被選擇, 沒有商品可選時, 再重新挑選種跟商品
+        category_goods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
+      }
       get_index <- sample(which(temp_good$'種類'==category_goods & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
       temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1 
     }
@@ -645,12 +652,12 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
   
   for(i in 1:c(length(gene_list)/2)){
     get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState)) #給定目前交配狀態
-    get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
     rnd_cross_rate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
     
     if(rnd_cross_rate<=cross_rate) {
       #亂數小於等於交配率, 則進行交配
       
+      get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
       divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
       # paste("分割染色體的位置為:", divide_index[1], ",", divide_index[2]) #顯示需要被分割的位置
       
@@ -663,9 +670,9 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
       tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
       
-      while (tempChrom_A$'totalWeight' > limit_weight || tempChrom_B$'totalWeight' > limit_weight) {
+      while (tempChrom_A$'totalWeight' > limit_weight || tempChrom_B$'totalWeight' > limit_weight && length(tempChrom_A$chromosome)!=length(unique(tempChrom_A$chromosome)) || length(tempChrom_B$chromosome)!=length(unique(tempChrom_B$chromosome))) {
         
-        print(paste("重量超過:", tempChrom_A$'totalWeight', "或", tempChrom_B$'totalWeight', ">", limit_weight))
+        print(paste("重量超過:", tempChrom_A$'totalWeight', "或", tempChrom_B$'totalWeight', ">", limit_weight, "或 有重複值"))
         
         get_index <- as.vector(sample(which(get_cross_state!=1),2)) #重新抽取要被交配的基因
         divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #重新隨機選擇切割地方(採雙點交配)
@@ -741,7 +748,8 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
 
 
 #突變方法, 加入重量限制
-mutation_FN <- function(gene_list, mutation_rate, require_goods, non_require_values, soure_data, limit_weight) {
+mutation_FN <- function(good_data, gene_list, mutation_rate, require_goods, non_require_values, soure_data, limit_weight) {
+  #good_data: 商品資料集
   #gene_list: 已交配過的基因人口群
   #mutation_rate: 交配率
   #require_goods: 必要性商品清單
@@ -760,6 +768,7 @@ mutation_FN <- function(gene_list, mutation_rate, require_goods, non_require_val
     if(rnd_mutation_rate <= mutation_rate){
       mutation_category <- as.character(temp_list[[i]][[1]][mutation_index,]$'種類') #取得基因中要被突變的染色體商品種類
       mutation_list <- soure_data[soure_data$'種類'==mutation_category,] #取得原始資料中符合要被突變的商品種類
+      temp_good_data <- good_data[good_data$'種類'==mutation_category, ] #取得資料集該種類的資料
       
       repeat {
         #重複篩選商品, 直到沒有與原本基因相同的商品
@@ -769,14 +778,15 @@ mutation_FN <- function(gene_list, mutation_rate, require_goods, non_require_val
         comput_weight_list[mutation_index,] <- mutation_list[rnd_mutation_value,] #將取得到突變的位置進行突變
         sum_weight <- sum(comput_weight_list$'重量') #計算突變後總重量
         
-        if(temp_list[[i]][[1]][mutation_index,]$'產品代號'!=mutation_list[rnd_mutation_value,]$'產品代號' && sum_weight < limit_weight){
-          #當商品兩者不同時, 並突變後的重量不可大於最大重量限制, 則跳出, 表示已拿到非重複的商品且總重量沒有超過限制 
+        if(temp_list[[i]][[1]][mutation_index,]$'產品代號'!=mutation_list[rnd_mutation_value,]$'產品代號' && sum_weight < limit_weight && dim(temp_good_data)[1]!=1){
+          #當商品兩者不同時, 並突變後的重量不可大於最大重量限制, 且該突變位置的商品種類數量不等於1, 則跳出, 表示已拿到非重複的商品, 且總重量沒有超過限制, 及該商品種類在剔除品牌後數量不等於1 
           break
         }
         print(paste("商品重複且重量超過:", sum_weight, "<", limit_weight))
         mutation_index <- as.numeric(sample(get_chrom_length, 1)) #隨機取得要突變的位置
         mutation_category <- as.character(temp_list[[i]][[1]][mutation_index,]$'種類') #取得基因中要被突變的染色體商品種類
         mutation_list <- soure_data[soure_data$'種類'==mutation_category,] #取得原始資料中符合要被突變的商品種類
+        temp_good_data <- good_data[good_data$'種類'==mutation_category, ] #取得資料集該種類的資料
       }
       temp_list[[i]][[1]][mutation_index,] <- mutation_list[rnd_mutation_value,] #將商品進行變異
       temp_list[[i]]$'chromosome'[mutation_index] <- as.character(mutation_list[rnd_mutation_value,]$'產品代號') #將基因進行變異
@@ -888,7 +898,7 @@ crossAfter <- cross_over(gene_list = fitnessTotalAfter, require_goods = required
 
 #開始進行突變
 mutationAfter <- list()
-mutationAfter <- mutation_FN(gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
+mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
 
 #計算新一代基因的價格及體積的適應函數
 mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
@@ -928,7 +938,7 @@ for (i in 1:maxGen) {
   crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
   
   mutationAfter <- list()
-  mutationAfter <- mutation_FN(gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
+  mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
   
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
   mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
