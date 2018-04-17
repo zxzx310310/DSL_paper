@@ -17,7 +17,7 @@ nonRequiredList <- c("沖泡", "罐頭", "飲品", "泡麵", "零食") #非必�
 #InstNoodlesQt <- 3 #泡麵數量
 #snackQt <- 4 #零食數量
 
-popAmount <- 100 #人口數量
+popAmount <- 30 #人口數量
 
 crossRate <- 0.7 #交配率
 mutationRate <- 0.01 #突變率
@@ -30,7 +30,7 @@ maxVolume <- 52*38*28 #最大箱子體積
 maxPrice <- 1500 #最大金額
 maxWeight <- 8000 #最大重量
 exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 2) #將要剔除的品牌
-nonRequiredValues <- 10 #選擇性商品的數量
+nonRequiredValues <- 14 #選擇性商品的數量
 #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
 dietHabit <- "素食"
 
@@ -455,7 +455,8 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
       category_goods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
       while (dim(temp_good[temp_good$'種類'==category_goods,])[1]==1) {
         #如果取得到的位置該商品只有一個且已經被選擇, 沒有商品可選時, 再重新挑選種跟商品
-        category_goods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
+        remove_index <- which(non_require_goods==category_goods)
+        category_goods <- sample(non_require_goods[-remove_index], 1) #隨機挑選選擇性商品的類別
       }
       get_index <- sample(which(temp_good$'種類'==category_goods & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
       temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1 
@@ -642,10 +643,9 @@ fitness_total <- function(gene_list) {
 
 
 
-#交配(雙點交配)-需考慮適應函數值(包含懲罰執)、交配率和重量限制
+#交配(雙點交配)-需考慮適應函數值(包含懲罰值)、交配率和重量限制
 cross_over <- function(gene_list, require_goods, non_require_values, cross_rate, limit_weight) {
-  temp_list <- gene_list
-  
+
   for (i in 1:length(gene_list)) {
     #先給予交配狀態, 0表示未交配, 1表示已交配
     gene_list[[i]]["crossState"] <- 0
@@ -664,7 +664,6 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       #亂數小於等於交配率, 則進行交配
       
       divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
-      # paste("分割染色體的位置為:", divide_index[1], ",", divide_index[2]) #顯示需要被分割的位置
       
       tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
       tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
@@ -692,8 +691,13 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
         tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
         tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
         
-        if(loop_value > 500) {
-          print("已成無窮解, 不進行交配")
+        # if(loop_value > 500) {
+        #   print("已成無窮解, 不進行交配")
+        #   break
+        # }
+        temp_log <- as.numeric(table(tempChrom_A$'chromosome'==tempChrom_B$'chromosome')["TRUE"]) 
+        
+        if(temp_log == get_chrom_length) {
           break
         }
       }
