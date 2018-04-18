@@ -22,14 +22,14 @@ popAmount <- 30 #人口數量
 crossRate <- 0.7 #交配率
 mutationRate <- 0.01 #突變率
 eliteValues <- 1 #菁英數量
-maxGen <- 1000 #世代次數
+maxGen <- 500 #世代次數
 
 
 #----使用者需輸入的參數(假設)----
 maxVolume <- 52*38*28 #最大箱子體積
 maxPrice <- 1500 #最大金額
-maxWeight <- 8000 #最大重量
-exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 2) #將要剔除的品牌
+maxWeight <- 16000 #最大重量
+#exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 2) #將要剔除的品牌
 nonRequiredValues <- 14 #選擇性商品的數量
 #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
 dietHabit <- "素食"
@@ -94,206 +94,206 @@ dietHabit <- "素食"
 
 
 #隨機選擇必要商品(單方執行)-2
-for (i in 1:length(requiredList)) {
-  requiredGood <- sample(1:nrow(goodData[goodData$種類==requiredList[i],]), size = 1) #隨機選擇一個每個種類的必要商品
-  getIndex <- which(goodData$種類==requiredList[i])[requiredGood] #抓取被選擇的必要商品
-  if(goodData$Selected[getIndex] != 1) {
-    goodData$Selected[getIndex] <- 1 #將被抓取的商品從0改為1  
-  } else {
-    i <- i-1 #如果該商品被選過, 則重新迴圈
-  }
-}
+# for (i in 1:length(requiredList)) {
+#   requiredGood <- sample(1:nrow(goodData[goodData$種類==requiredList[i],]), size = 1) #隨機選擇一個每個種類的必要商品
+#   getIndex <- which(goodData$種類==requiredList[i])[requiredGood] #抓取被選擇的必要商品
+#   if(goodData$Selected[getIndex] != 1) {
+#     goodData$Selected[getIndex] <- 1 #將被抓取的商品從0改為1  
+#   } else {
+#     i <- i-1 #如果該商品被選過, 則重新迴圈
+#   }
+# }
 
-for (i in 1:nonRequiredValues) {
-  categoryGoods <- sample(nonRequiredList, 1)
-  requiredGood <- sample(1:nrow(goodData[goodData$種類==categoryGoods,]), size = 1)
-  getIndex <- which(goodData$種類==categoryGoods)[requiredGood]
-  if(goodData$Selected[getIndex] != 1) {
-    goodData$Selected[getIndex] <- 1 
-  } else {
-    i <- i-1 #如果該商品被選過, 則重新迴圈
-  }
-}
+# for (i in 1:nonRequiredValues) {
+#   categoryGoods <- sample(nonRequiredList, 1)
+#   requiredGood <- sample(1:nrow(goodData[goodData$種類==categoryGoods,]), size = 1)
+#   getIndex <- which(goodData$種類==categoryGoods)[requiredGood]
+#   if(goodData$Selected[getIndex] != 1) {
+#     goodData$Selected[getIndex] <- 1 
+#   } else {
+#     i <- i-1 #如果該商品被選過, 則重新迴圈
+#   }
+# }
 
-crossOverList <- fitnessAfter #先將資料移轉給另外一個變數
-for (i in 1:length(crossOverList)) {
-  crossOverList[[i]]["corssOverState"] <- 0 #因所有基因都尚未被交配, 所以給0作為代表
-}
-for (i in 1:2) {
-  selected <- sample(crossOverList, 2)
-  
-  selected[[1]]$corssOverState <- 1 #因被選擇的基因被交配, 所以給1作為代表
-  selected[[2]]$corssOverState <- 1 #因被選擇的基因被交配, 所以給1作為代表
-}
+# crossOverList <- fitnessAfter #先將資料移轉給另外一個變數
+# for (i in 1:length(crossOverList)) {
+#   crossOverList[[i]]["corssOverState"] <- 0 #因所有基因都尚未被交配, 所以給0作為代表
+# }
+# for (i in 1:2) {
+#   selected <- sample(crossOverList, 2)
+#   
+#   selected[[1]]$corssOverState <- 1 #因被選擇的基因被交配, 所以給1作為代表
+#   selected[[2]]$corssOverState <- 1 #因被選擇的基因被交配, 所以給1作為代表
+# }
 
 
 #交配測試-1
-getChromLength <- length(requiredList)+nonRequiredValues #取得染色體長度
-rnd <- sort(sample(getChromLength, 2)) #隨機選擇切割地方(採雙點交配)
-fitnessAfter[[1]]["crossState"] <- 0
-fitnessAfter[[2]]["crossState"] <- 0
-tempChrom_A <- fitnessAfter[[1]] #先將染色體給暫時變數A
-tempChrom_B <- fitnessAfter[[2]] #先將染色體給暫時變數B
-tempChrom_A$chromosome[c(rnd[1]+1):rnd[2]] <- fitnessAfter[[2]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
-tempChrom_B$chromosome[c(rnd[1]+1):rnd[2]] <- fitnessAfter[[1]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
-tempChrom_A[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[2]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的商品給第一個基因
-tempChrom_B[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[1]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
-fitnessAfter[[1]]["crossState"] <- 1
-fitnessAfter[[2]]["crossState"] <- 1
+# getChromLength <- length(requiredList)+nonRequiredValues #取得染色體長度
+# rnd <- sort(sample(getChromLength, 2)) #隨機選擇切割地方(採雙點交配)
+# fitnessAfter[[1]]["crossState"] <- 0
+# fitnessAfter[[2]]["crossState"] <- 0
+# tempChrom_A <- fitnessAfter[[1]] #先將染色體給暫時變數A
+# tempChrom_B <- fitnessAfter[[2]] #先將染色體給暫時變數B
+# tempChrom_A$chromosome[c(rnd[1]+1):rnd[2]] <- fitnessAfter[[2]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+# tempChrom_B$chromosome[c(rnd[1]+1):rnd[2]] <- fitnessAfter[[1]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+# tempChrom_A[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[2]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第二個基因切割的商品給第一個基因
+# tempChrom_B[[1]][c(rnd[1]+1):rnd[2]] <- fitnessAfter[[1]]$chromosome[c(rnd[1]+1):rnd[2]] #開始進行交配, 將第一個基因切割的商品給第二個基因
+# fitnessAfter[[1]]["crossState"] <- 1
+# fitnessAfter[[2]]["crossState"] <- 1
 
 
 #交配測試-2
-geneList <- fitnessPriceAfter
-paste("交配率:", crossRate) #顯示交配率
-for (i in 1:length(fitnessPriceAfter)) {
-  #先給予交配狀態, 0表示未交配, 1表示已交配
-  geneList[[i]]["crossState"] <- 0
-}
-getChromLength <- length(requiredList)+nonRequiredValues #取得染色體長度
-
-for(i in 1:(length(fitnessPriceAfter)/2)){
-  getCrossState <- unlist(lapply(geneList, function(x) x$crossState)) #給定目前交配狀態
-  paste("目前交配狀態為:", getCrossState) #顯示交配狀態
-  # if (length(getCrossState==1)==length(fitnessPriceAfter)) {
-  getIndex <- as.vector(sample(which(getCrossState!=1),2)) #抽取要被交配的基因
-  paste("被抽取到的基因為:", getIndex[1], ",", getIndex[2]) #顯示被抽取到基因的index
-  rndCrossRate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
-  paste("亂數交配率:", rndCrossRate) #顯示亂數的交配率
-  
-  if(rndCrossRate<=crossRate) {
-    #亂數小於等於交配率, 則進行交配
-    
-    divideIndex <- sort(as.vector(sample(getChromLength, 2))) #隨機選擇切割地方(採雙點交配)
-    paste("分割染色體的位置為:", divideIndex[1], ",", divideIndex[2]) #顯示需要被分割的位置
-    
-    tempChrom_A <- geneList[[getIndex[1]]] #先將染色體給暫時變數A
-    tempChrom_B <- geneList[[getIndex[2]]] #先將染色體給暫時變數B
-    tempChrom_A$'chromosome'[(divideIndex[1]+1):divideIndex[2]] <- geneList[[getIndex[2]]]$'chromosome'[(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
-    tempChrom_B$'chromosome'[(divideIndex[1]+1):divideIndex[2]] <- geneList[[getIndex[1]]]$'chromosome'[(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
-    tempChrom_A[[1]][(divideIndex[1]+1):divideIndex[2],] <- geneList[[getIndex[2]]][[1]][(divideIndex[1]+1):divideIndex[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
-    tempChrom_B[[1]][(divideIndex[1]+1):divideIndex[2],] <- geneList[[getIndex[1]]][[1]][(divideIndex[1]+1):divideIndex[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
-    tempChrom_A$'crossState' <- 1
-    tempChrom_B$'crossState' <- 1
-    geneList[[getIndex[1]]]<- tempChrom_A
-    geneList[[getIndex[2]]]<- tempChrom_B
-    print("交配囉!")
-  } else {
-    #亂數大於交配率, 則不進行交配
-    geneList[[getIndex[1]]]$'crossState' <- 1
-    geneList[[getIndex[2]]]$'crossState' <- 1 
-    print("沒交配!")
-  }
-  # } else {
-  #   print("所有基因皆已交配!")
-  # }
-}
+# geneList <- fitnessPriceAfter
+# paste("交配率:", crossRate) #顯示交配率
+# for (i in 1:length(fitnessPriceAfter)) {
+#   #先給予交配狀態, 0表示未交配, 1表示已交配
+#   geneList[[i]]["crossState"] <- 0
+# }
+# getChromLength <- length(requiredList)+nonRequiredValues #取得染色體長度
+# 
+# for(i in 1:(length(fitnessPriceAfter)/2)){
+#   getCrossState <- unlist(lapply(geneList, function(x) x$crossState)) #給定目前交配狀態
+#   paste("目前交配狀態為:", getCrossState) #顯示交配狀態
+#   # if (length(getCrossState==1)==length(fitnessPriceAfter)) {
+#   getIndex <- as.vector(sample(which(getCrossState!=1),2)) #抽取要被交配的基因
+#   paste("被抽取到的基因為:", getIndex[1], ",", getIndex[2]) #顯示被抽取到基因的index
+#   rndCrossRate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
+#   paste("亂數交配率:", rndCrossRate) #顯示亂數的交配率
+#   
+#   if(rndCrossRate<=crossRate) {
+#     #亂數小於等於交配率, 則進行交配
+#     
+#     divideIndex <- sort(as.vector(sample(getChromLength, 2))) #隨機選擇切割地方(採雙點交配)
+#     paste("分割染色體的位置為:", divideIndex[1], ",", divideIndex[2]) #顯示需要被分割的位置
+#     
+#     tempChrom_A <- geneList[[getIndex[1]]] #先將染色體給暫時變數A
+#     tempChrom_B <- geneList[[getIndex[2]]] #先將染色體給暫時變數B
+#     tempChrom_A$'chromosome'[(divideIndex[1]+1):divideIndex[2]] <- geneList[[getIndex[2]]]$'chromosome'[(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+#     tempChrom_B$'chromosome'[(divideIndex[1]+1):divideIndex[2]] <- geneList[[getIndex[1]]]$'chromosome'[(divideIndex[1]+1):divideIndex[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+#     tempChrom_A[[1]][(divideIndex[1]+1):divideIndex[2],] <- geneList[[getIndex[2]]][[1]][(divideIndex[1]+1):divideIndex[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
+#     tempChrom_B[[1]][(divideIndex[1]+1):divideIndex[2],] <- geneList[[getIndex[1]]][[1]][(divideIndex[1]+1):divideIndex[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
+#     tempChrom_A$'crossState' <- 1
+#     tempChrom_B$'crossState' <- 1
+#     geneList[[getIndex[1]]]<- tempChrom_A
+#     geneList[[getIndex[2]]]<- tempChrom_B
+#     print("交配囉!")
+#   } else {
+#     #亂數大於交配率, 則不進行交配
+#     geneList[[getIndex[1]]]$'crossState' <- 1
+#     geneList[[getIndex[2]]]$'crossState' <- 1 
+#     print("沒交配!")
+#   }
+#   # } else {
+#   #   print("所有基因皆已交配!")
+#   # }
+# }
 
 
 #突變測試
-paste("突變率:", mutationRate) #顯示突變率
-getChromLength <- length(requiredList)+nonRequiredValues #基因染色體的長度
-tempList <- crossAfter #先將資料給另外一個變數
-
-for(i in 1:20) {
-  mutationIndex <- as.numeric(sample(getChromLength, 1)) #隨機取得要突變的位置(有問題的地方: 第二次執行後前面資料皆會覆蓋)
-  print(paste("突變的位置為:", mutationIndex)) #顯示突變位置
-  
-  rndMutationRate <- runif(n = 1, min = 0, max = 1) #產生亂數
-  print(paste("亂數突變率:", rndMutationRate)) #顯示亂數的突變率
-  if(rndMutationRate <= mutationRate){
-    mutationCategory <- as.character(tempList[[i]][[1]][mutationIndex,]$'種類') #取得基因中要被突變的染色體商品種類
-    mutationList <- goodData[goodData$種類==mutationCategory,] #取得原始資料中符合要被突變的商品種類
-    print(mutationCategory)
-    
-    repeat {
-      #重複篩選商品, 直到沒有與原本基因相同的商品
-      rndMutationValue <- sample(nrow(mutationList), 1) #隨機取得該種類的商品
-      print(paste(tempList[[i]][[1]][mutationIndex,]$'產品代號', "和", mutationList[rndMutationValue,]$'產品代號'))
-      if(tempList[[i]][[1]][mutationIndex,]$'產品代號'!=mutationList[rndMutationValue,]$'產品代號'){
-        #當商品兩者不同時, 則跳出, 表示已拿到非重複的商品
-        print(paste("結果是", tempList[[1]][[1]][mutationIndex,]$'產品代號', "和", mutationList[rndMutationValue,]$'產品代號'))
-        break
-      }
-    }
-    tempList[[i]][[1]][mutationIndex,] <- mutationList[rndMutationValue,] #將商品進行變異
-    tempList[[i]]$chromosome[mutationIndex] <- as.character(mutationList[rndMutationValue,]$產品代號) #將基因進行變異 
-    print("完成突變!")
-  } else {
-    print(paste(rndMutationRate, "<=", mutationRate)) #顯示目前突變率
-  }
-  print(paste("========第", i, "次========"))
-}
+# paste("突變率:", mutationRate) #顯示突變率
+# getChromLength <- length(requiredList)+nonRequiredValues #基因染色體的長度
+# tempList <- crossAfter #先將資料給另外一個變數
+# 
+# for(i in 1:20) {
+#   mutationIndex <- as.numeric(sample(getChromLength, 1)) #隨機取得要突變的位置(有問題的地方: 第二次執行後前面資料皆會覆蓋)
+#   print(paste("突變的位置為:", mutationIndex)) #顯示突變位置
+#   
+#   rndMutationRate <- runif(n = 1, min = 0, max = 1) #產生亂數
+#   print(paste("亂數突變率:", rndMutationRate)) #顯示亂數的突變率
+#   if(rndMutationRate <= mutationRate){
+#     mutationCategory <- as.character(tempList[[i]][[1]][mutationIndex,]$'種類') #取得基因中要被突變的染色體商品種類
+#     mutationList <- goodData[goodData$種類==mutationCategory,] #取得原始資料中符合要被突變的商品種類
+#     print(mutationCategory)
+#     
+#     repeat {
+#       #重複篩選商品, 直到沒有與原本基因相同的商品
+#       rndMutationValue <- sample(nrow(mutationList), 1) #隨機取得該種類的商品
+#       print(paste(tempList[[i]][[1]][mutationIndex,]$'產品代號', "和", mutationList[rndMutationValue,]$'產品代號'))
+#       if(tempList[[i]][[1]][mutationIndex,]$'產品代號'!=mutationList[rndMutationValue,]$'產品代號'){
+#         #當商品兩者不同時, 則跳出, 表示已拿到非重複的商品
+#         print(paste("結果是", tempList[[1]][[1]][mutationIndex,]$'產品代號', "和", mutationList[rndMutationValue,]$'產品代號'))
+#         break
+#       }
+#     }
+#     tempList[[i]][[1]][mutationIndex,] <- mutationList[rndMutationValue,] #將商品進行變異
+#     tempList[[i]]$chromosome[mutationIndex] <- as.character(mutationList[rndMutationValue,]$產品代號) #將基因進行變異 
+#     print("完成突變!")
+#   } else {
+#     print(paste(rndMutationRate, "<=", mutationRate)) #顯示目前突變率
+#   }
+#   print(paste("========第", i, "次========"))
+# }
 
 
 #選擇並菁英政策
-newPop <- fitnessTotalAfter #將此代基因放入新的變數
-newPop <- append(newPop, mutationAfter) #將下代基因加入變數
-
-for (i in 1:length(newPop)) {
-  #產生菁英狀態
-  newPop[[i]]["elite"] <- 0 #將菁英狀態皆設定為0, 0表示不是菁英值; 1表示被挑選為菁英值
-}
-
-resultPop <- list() #初始最終結果族群清單
-
-lastList <- head(order(unlist(lapply(newPop, function(x) x$totalFit)), decreasing = FALSE), popAmount) #取得popAmount(數量)的族群
-for (z in 1:length(eliteValues)) {
-  #將最好的適應函數設定為精英值, 並放入新的群組
-  newPop[[lastList[z]]]$'elite' <- 1
-  resultPop[[z]] <- newPop[[lastList[z]]] #將菁英的基因放入新的族群中
-}
-
-for (k in (length(eliteValues)+1):popAmount) {
-  #將剩下的基因加入到族群
-  resultPop[[k]] <- newPop[[lastList[k]]]
-}
+# newPop <- fitnessTotalAfter #將此代基因放入新的變數
+# newPop <- append(newPop, mutationAfter) #將下代基因加入變數
+# 
+# for (i in 1:length(newPop)) {
+#   #產生菁英狀態
+#   newPop[[i]]["elite"] <- 0 #將菁英狀態皆設定為0, 0表示不是菁英值; 1表示被挑選為菁英值
+# }
+# 
+# resultPop <- list() #初始最終結果族群清單
+# 
+# lastList <- head(order(unlist(lapply(newPop, function(x) x$totalFit)), decreasing = FALSE), popAmount) #取得popAmount(數量)的族群
+# for (z in 1:length(eliteValues)) {
+#   #將最好的適應函數設定為精英值, 並放入新的群組
+#   newPop[[lastList[z]]]$'elite' <- 1
+#   resultPop[[z]] <- newPop[[lastList[z]]] #將菁英的基因放入新的族群中
+# }
+# 
+# for (k in (length(eliteValues)+1):popAmount) {
+#   #將剩下的基因加入到族群
+#   resultPop[[k]] <- newPop[[lastList[k]]]
+# }
 
 
 #----檢驗區----
 
 
-goodData[goodData$'Selected'==1,] #檢驗已被選擇的商品
-
-selectedGood <- goodData[goodData$'Selected'==1,]
-sum(selectedGood$'體積')
-sum(selectedGood$'單價')
-
-allFitPrice <- unlist(lapply(fitnessAfter, function(x) x$fitPrice)) #拉出所有價格的fitness
-min(allFitPrice) #找出最小的數值
-which.min(allFitPrice) #找出最小數值的index
-
-#檢測是否有違反體積限制而變為NA值的資料
-if(length(which(is.na(fitnessAfter))) != 0) {
-  paste("有違反體積限制的基因數為: ", length(which(is.na(fitnessAfter))))
-} else {
-  paste("所有基因完全符合體積限制, 共", length(which(!is.na(fitnessAfter))), "個")
-}
-
-
-#檢驗交配後的結果
-for(i in 1:20){
-  print(crossAfter[[i]]$'chromosome' == fitnessPriceAfter[[i]]$'chromosome')
-}
-
-#檢驗突變後的結果
-for(i in 1:20) {
-  print(mutationAfter[[i]]$'chromosome'==mutationAfter[[i]]$'chromosome')
-}
+# goodData[goodData$'Selected'==1,] #檢驗已被選擇的商品
+# 
+# selectedGood <- goodData[goodData$'Selected'==1,]
+# sum(selectedGood$'體積')
+# sum(selectedGood$'單價')
+# 
+# allFitPrice <- unlist(lapply(fitnessAfter, function(x) x$fitPrice)) #拉出所有價格的fitness
+# min(allFitPrice) #找出最小的數值
+# which.min(allFitPrice) #找出最小數值的index
+# 
+# #檢測是否有違反體積限制而變為NA值的資料
+# if(length(which(is.na(fitnessAfter))) != 0) {
+#   paste("有違反體積限制的基因數為: ", length(which(is.na(fitnessAfter))))
+# } else {
+#   paste("所有基因完全符合體積限制, 共", length(which(!is.na(fitnessAfter))), "個")
+# }
+# 
+# 
+# #檢驗交配後的結果
+# for(i in 1:20){
+#   print(crossAfter[[i]]$'chromosome' == fitnessPriceAfter[[i]]$'chromosome')
+# }
+# 
+# #檢驗突變後的結果
+# for(i in 1:20) {
+#   print(mutationAfter[[i]]$'chromosome'==mutationAfter[[i]]$'chromosome')
+# }
 
 
 
 #----Function----
 
 #剔除品牌的方法
-except_brand <- function(good_data, except_brand_list) {
-  #good_data: 原始商品資料集
-  #except_brand_list: 剔除品牌的名稱
-  
-  for (i in 1:length(except_brand_list)) {
-    good_data <- good_data[good_data$'廠牌'!=except_brand_list[i],] #將要剔除的廠牌移除
-  }
-  return(good_data)
-}
+# except_brand <- function(good_data, except_brand_list) {
+#   #good_data: 原始商品資料集
+#   #except_brand_list: 剔除品牌的名稱
+#   
+#   for (i in 1:length(except_brand_list)) {
+#     good_data <- good_data[good_data$'廠牌'!=except_brand_list[i],] #將要剔除的廠牌移除
+#   }
+#   return(good_data)
+# }
 
 
 
@@ -674,7 +674,7 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
       tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
       
-      while (tempChrom_A$'totalWeight' > limit_weight || tempChrom_B$'totalWeight' > limit_weight && length(tempChrom_A$chromosome)!=length(unique(tempChrom_A$chromosome)) || length(tempChrom_B$chromosome)!=length(unique(tempChrom_B$chromosome))) {
+      while (tempChrom_A$'totalWeight' > limit_weight || tempChrom_B$'totalWeight' > limit_weight && length(tempChrom_A$chromosome)!=length(unique(tempChrom_A$chromosome))) {
         loop_value <- loop_value+1
         
         print(paste("重量超過:", tempChrom_A$'totalWeight', "或", tempChrom_B$'totalWeight', ">", limit_weight, "或 有重複值"))
@@ -852,10 +852,6 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
   return(result_pop)
 }
 
-#選擇方法(菁英政策)
-# selected_method <- function() {
-#   
-# }
 
 #----暫存區----
 
@@ -865,7 +861,7 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
 #----執行----
 
 #剔除掉不想要的品牌
-goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
+#goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
 
 #葷素的方法
 goodData <- diet_select(good_data = goodData, diet_habit_list = dietHabit)
