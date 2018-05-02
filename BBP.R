@@ -2,7 +2,7 @@
 sourceData <- read.csv(file = "assets/StoreData.csv") #讀取原始資料
 goodData <- sourceData #將原始資料複製一份
 
-goodData <- cbind(goodData, "Selected" = 0) #新增被選擇欄位
+goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
 
 #----環境參數設定----
@@ -28,11 +28,14 @@ maxGen <- 500 #世代次數
 #----使用者需輸入的參數(假設)----
 maxVolume <- 52*38*28 #最大箱子體積
 maxPrice <- 1500 #最大金額
-maxWeight <- 16000 #最大重量
+maxWeight <- 13000 #最大重量
 #exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 2) #將要剔除的品牌
 nonRequiredValues <- 14 #選擇性商品的數量
 #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
 dietHabit <- "素食"
+userPreference <- sample(c(1:5), length(nonRequiredList), replace = TRUE)
+
+
 
 
 #----單方測試----
@@ -283,6 +286,19 @@ dietHabit <- "素食"
 
 
 #----Function----
+#偏好值與類別合併
+preference_match <- function(good_data, require_goods, non_require_goods, user_preference) {
+  total_list <- as.character(c(require_goods, non_require_goods)) #將必需性商品與選擇性商品類別合併
+  good_preference <- data.frame(category = total_list, preference = c(sample(1, length(require_goods), replace = TRUE), user_preference)) #將商品類別和偏好值合併為DF型態
+  
+  for (i in 1:dim(good_preference)[1]) {
+    good_data[good_data$種類==good_preference$category[i],]$Preference <- good_preference$preference[i]
+  }
+  
+  return(good_data)
+}
+
+
 
 #剔除品牌的方法
 # except_brand <- function(good_data, except_brand_list) {
@@ -859,6 +875,7 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
 
 
 #----執行----
+goodData <- preference_match(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, user_preference = userPreference)
 
 #剔除掉不想要的品牌
 #goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
@@ -891,17 +908,9 @@ fitnessVolumeAfter <- fitness_volume(gene_list = geneList, bin_volume = maxVolum
 fitnessPriceAfter <- list()
 fitnessPriceAfter <- fitness_price(gene_list = fitnessVolumeAfter, limit_price = maxPrice)
 
+#計算總體適應度
 fitnessTotalAfter <- list()
 fitnessTotalAfter <- fitness_total(gene_list = fitnessPriceAfter)
-
-
-
-#判斷體積是否超過最大限制, 若超過則將該欄位變為NA
-# for (i in 1:length(fitnessPriceAfter)) {
-#   if(fitnessPriceAfter[[i]]$totalVolume > maxVolume) {
-#     fitnessPriceAfter[[i]] <- NA
-#   }
-# }
 
 #開始進行交配
 crossAfter <- list()
@@ -924,22 +933,6 @@ mutationAfter <- fitness_total(gene_list = mutationAfter)
 #合併此代與下一代基因, 並採用菁英政策和產出新的族群
 newPopulation <- new_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
 
-#fitnessTotalAfter: 第一代族群
-#mutationAfter: 下一代族群
-#newPopulation: 為最新的族群
-
-
-# crossAfter <- list()
-# crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
-# 
-# mutationAfter <- list()
-# mutationAfter <- mutation_FN(gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData)
-# 
-# mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
-# mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
-# mutationAfter <- fitness_total(gene_list = mutationAfter)
-# 
-# newPopulation <- new_population(first_gene = newPopulation, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
 
 gen_values_best <- vector() #紀錄最好的基因總體適應函數
 gen_values_loss <- vector() #紀錄最差的基因總體適應函數
@@ -964,4 +957,5 @@ for (i in 1:maxGen) {
 
 plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
 
-#resultDF<- newPopulation[[1]][[1]][,-10]
+#resultDF<- newPopulation[[1]][[1]][,-11] #去除selected的欄位
+#write.csv(resultDF, file = "outputList.csv", row.names = FALSE) #輸出最佳的裝箱清單
