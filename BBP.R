@@ -286,13 +286,13 @@ userPreference <- sample(c(1:5), length(nonRequiredList), replace = TRUE)
 
 
 #----Function----
-#偏好值與類別合併
+#偏好值與類別合併, 並且將偏好值平方
 preference_match <- function(good_data, require_goods, non_require_goods, user_preference) {
   total_list <- as.character(c(require_goods, non_require_goods)) #將必需性商品與選擇性商品類別合併
   good_preference <- data.frame(category = total_list, preference = c(sample(1, length(require_goods), replace = TRUE), user_preference)) #將商品類別和偏好值合併為DF型態
   
   for (i in 1:dim(good_preference)[1]) {
-    good_data[good_data$種類==good_preference$category[i],]$Preference <- good_preference$preference[i]
+    good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])^2
   }
   
   return(good_data)
@@ -504,6 +504,17 @@ total_weight <- function(gene_list) {
   for(i in 1:length(gene_list)) {
     sum_weight <- sum(gene_list[[i]][[1]]$'重量')
     gene_list[[i]]["totalWeight"] <- list(sum_weight) 
+  }
+  return(gene_list)
+}
+
+#偏好的適應度方法(未完成)
+fitness_preference <- function(gene_list) {
+  #被選擇出的基因清單
+  print("開始計算偏好適應函數...")
+  for(i in 1:length(gene_list)) {
+    sum_preference <- sum(gene_list[[i]][[1]]$'Preference')
+    gene_list[[i]]["totalPreference"] <- list(sum_preference) 
   }
   return(gene_list)
 }
@@ -900,9 +911,13 @@ geneList <- total_weight(gene_list = geneList)
 # totalGene <- list()
 # totalGene <- total_Volume(gene_list = geneList)
 
+#計算偏好適應度(目前僅計算總偏好值)
+fitnessPreference <- list()
+fitnessPreference <- fitness_preference(gene_list = geneList)
+
 #計算體積適應度
 fitnessVolumeAfter <- list()
-fitnessVolumeAfter <- fitness_volume(gene_list = geneList, bin_volume = maxVolume, volume_alpha = alpha)
+fitnessVolumeAfter <- fitness_volume(gene_list = fitnessPreference, bin_volume = maxVolume, volume_alpha = alpha)
 
 #計算價格適應度
 fitnessPriceAfter <- list()
