@@ -1,9 +1,20 @@
-#----資料初始化----
+#----資料初始化(本地端)----
 sourceData <- read.csv(file = "assets/StoreData.csv") #讀取原始資料
 goodData <- sourceData #將原始資料複製一份
 
 goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
+
+#----資料初始化(資料庫)----
+library(RMySQL)
+
+mydb = dbConnect(MySQL(), user='root', password='', dbname='product', host='127.0.0.1')
+dbSendQuery(mydb,"SET NAMES big5")
+result <- dbSendQuery(mydb, 'SELECT * FROM storedata')
+
+sourceData <- fetch(result)
+goodData <- sourceData #將原始資料複製一份
+goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
 #----環境參數設定----
 alpha <- 0.9 #體積鬆弛因子
