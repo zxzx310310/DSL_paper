@@ -1,20 +1,27 @@
 #----資料初始化(本地端)----
 sourceData <- read.csv(file = "assets/StoreData.csv") #讀取原始資料
+
+# sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
+# sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
+# names(sourceData)[11] <- "重量" #重新命名欄位名稱
+# categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
+
+
 goodData <- sourceData #將原始資料複製一份
 
+#goodData <- cbind(goodData, "種類" = NA ,"Selected" = 0, "Preference" = 1) #新增被選擇欄位
 goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
-
 
 #----資料初始化(資料庫)----
-library(RMySQL)
-
-mydb = dbConnect(MySQL(), user='root', password='', dbname='product', host='127.0.0.1')
-dbSendQuery(mydb,"SET NAMES big5")
-result <- dbSendQuery(mydb, 'SELECT * FROM storedata')
-
-sourceData <- fetch(result)
-goodData <- sourceData #將原始資料複製一份
-goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
+# library(RMySQL)
+# 
+# mydb = dbConnect(MySQL(), user='root', password='', dbname='product', host='127.0.0.1')
+# dbSendQuery(mydb,"SET NAMES big5")
+# result <- dbSendQuery(mydb, 'SELECT * FROM storedata')
+# 
+# sourceData <- fetch(result)
+# goodData <- sourceData #將原始資料複製一份
+# goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
 #----環境參數設定----
 alpha <- 0.9 #體積鬆弛因子
@@ -44,8 +51,9 @@ maxWeight <- 13000 #最大重量
 nonRequiredValues <- 14 #選擇性商品的數量
 #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
 dietHabit <- "素食"
-userPreference <- sample(c(1:5), length(nonRequiredList), replace = TRUE)
-
+userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE)
+#userPreference <- c(sample(1, length(requiredList), replace = TRUE), sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE))
+#preferenceDF <- data.frame(種類 = c(requiredList, nonRequiredList), 喜好 = userPreference)
 
 
 
@@ -297,15 +305,16 @@ userPreference <- sample(c(1:5), length(nonRequiredList), replace = TRUE)
 
 
 #----Function----
-#偏好值與類別合併, 並且將偏好值平方
+#偏好值與類別合併
 preference_match <- function(good_data, require_goods, non_require_goods, user_preference) {
   total_list <- as.character(c(require_goods, non_require_goods)) #將必需性商品與選擇性商品類別合併
   good_preference <- data.frame(category = total_list, preference = c(sample(1, length(require_goods), replace = TRUE), user_preference)) #將商品類別和偏好值合併為DF型態
-  
+
   for (i in 1:dim(good_preference)[1]) {
-    good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])^2
+    # good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])^2
+    good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])
   }
-  
+
   return(good_data)
 }
 
@@ -524,8 +533,14 @@ fitness_preference <- function(gene_list) {
   #被選擇出的基因清單
   print("開始計算偏好適應函數...")
   for(i in 1:length(gene_list)) {
-    sum_preference <- sum(gene_list[[i]][[1]]$'Preference')
-    gene_list[[i]]["totalPreference"] <- list(sum_preference) 
+    reuslt <- 1
+    for (k in 1:sum(length(requiredList), length(nonRequiredList))) {
+      temp_preferencd <- 1+as.numeric((geneList[[i]][[1]]$'Preference'[k])^2 - 1) / sum(1:length(nonRequiredList)) #偏好的計算公式
+      reuslt <- reuslt*temp_preferencd
+    }
+    gene_list[[i]]["fitPreference"] <- list(reuslt)
+    print(paste("偏好適應函數:", reuslt))
+    print(paste("========第", i, "個基因========"))
   }
   return(gene_list)
 }
@@ -586,7 +601,7 @@ fitness_total <- function(gene_list) {
   sum_fit <- unlist(lapply(fitnessPriceAfter, function(x) x$fitVolume*x$fitPrice))
   
   for (i in 1:length(gene_list)) {
-    sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'
+    sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
     
     gene_list[[i]]["totalFit"] <- sum_fit
     print(paste("總體適應函數:", sum_fit))
