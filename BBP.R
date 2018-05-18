@@ -1,9 +1,8 @@
 #----資料初始化(本地端)----
-sourceData <- read.csv(file = "assets/StoreData.csv") #讀取原始資料
-
-# sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
-# sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
-# names(sourceData)[11] <- "重量" #重新命名欄位名稱
+#sourceData <- read.csv(file = "assets/StoreData.csv") #讀取原始資料
+sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
+sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
+names(sourceData)[11] <- "重量" #重新命名欄位名稱
 # categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
 
 
