@@ -12,21 +12,42 @@ goodData <- sourceData #將原始資料複製一份
 goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
 #----資料初始化(資料庫)----
-if (!require("RMySQL")) install.packages("RMySQL")
-# library(RMySQL)
+#if (!require("RMySQL")) install.packages("RMySQL")
+library(RMySQL)
 
 mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
 dbSendQuery(mydb,"SET NAMES big5")
 result <- dbSendQuery(mydb, 'SELECT * FROM classicbase;')
 
 sourceData <- fetch(result, n = -1)
+sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
+names(sourceData)[1] <- "產品代號"
+names(sourceData)[2] <- "品名"
+names(sourceData)[3] <- "單價"
+names(sourceData)[4] <- "體積"
+names(sourceData)[5] <- "廠牌"
+names(sourceData)[6] <- "長"
+names(sourceData)[7] <- "寬"
+names(sourceData)[8] <- "高"
+names(sourceData)[9] <- "種類"
+names(sourceData)[10] <- "葷素"
+names(sourceData)[11] <- "重量" #重新命名欄位名稱
+
+sourceData$'單價' <- as.integer(sourceData$'單價')
+sourceData$'體積' <- as.numeric(sourceData$'體積')
+sourceData$'廠牌' <- as.factor(sourceData$'廠牌')
+sourceData$'種類' <- as.factor(sourceData$'種類')
+sourceData$'葷素' <- as.factor(sourceData$'葷素')
+sourceData$'重量' <- as.numeric(sourceData$'重量')
+
 goodData <- sourceData #將原始資料複製一份
 goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
+
 #----環境參數設定----
-maxVolume <- 52*38*28 #最大箱子體積
-maxWeight <- 13000 #最大重量
-alpha <- 0.9 #體積鬆弛因子
+maxVolume <- 47*32*39 #最大箱子體積
+maxWeight <- 16000 #最大重量
+alpha <- 0.936 #體積鬆弛因子
 #requiredList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食") #必需品商品
 #nonRequiredList <- c("沖泡", "罐頭", "飲品", "泡麵", "零食") #非必需品商品
 #categoryList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食", "沖泡", "罐頭", "飲品", "泡麵", "零食") #必需品商品
@@ -46,10 +67,11 @@ maxGen <- 500 #世代次數
 
 
 #----使用者需輸入的參數(假設)----
-dietHabit <- "素食"
-userItemValues <- 16 #使用者需要的數量
-maxPrice <- 1500 #最大金額
-exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
+dietHabit <- "葷食"
+userItemValues <- 22 #使用者需要的數量
+maxPrice <- 1599 #最大金額
+#exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
+exceptBrandList <- '大同' #將要剔除的品牌
 
 #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
 #userPreference <- c(sample(1, length(requiredList), replace = TRUE), sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE))
@@ -1009,6 +1031,7 @@ for (i in 1:maxGen) {
 } 
 
 plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
+write.csv(x = newPopulation[[1]][[1]][c(-12, -13)], file = "solution.csv", row.names = FALSE)
 
 #resultDF<- newPopulation[[1]][[1]][,-11] #去除selected的欄位
 #write.csv(resultDF, file = "outputList.csv", row.names = FALSE) #輸出最佳的裝箱清單
