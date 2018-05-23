@@ -12,20 +12,23 @@ goodData <- sourceData #將原始資料複製一份
 goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
 #----資料初始化(資料庫)----
+if (!require("RMySQL")) install.packages("RMySQL")
 # library(RMySQL)
-# 
-# mydb = dbConnect(MySQL(), user='root', password='', dbname='product', host='127.0.0.1')
-# dbSendQuery(mydb,"SET NAMES big5")
-# result <- dbSendQuery(mydb, 'SELECT * FROM storedata')
-# 
-# sourceData <- fetch(result)
-# goodData <- sourceData #將原始資料複製一份
-# goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
+
+mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
+dbSendQuery(mydb,"SET NAMES big5")
+result <- dbSendQuery(mydb, 'SELECT * FROM classicbase;')
+
+sourceData <- fetch(result, n = -1)
+goodData <- sourceData #將原始資料複製一份
+goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
 #----環境參數設定----
+maxVolume <- 52*38*28 #最大箱子體積
+maxWeight <- 13000 #最大重量
 alpha <- 0.9 #體積鬆弛因子
-requiredList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食") #必需品商品
-nonRequiredList <- c("沖泡", "罐頭", "飲品", "泡麵", "零食") #非必需品商品
+#requiredList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食") #必需品商品
+#nonRequiredList <- c("沖泡", "罐頭", "飲品", "泡麵", "零食") #非必需品商品
 #categoryList <- c("油", "米", "醬油", "酒", "鹽", "糖", "麵食", "沖泡", "罐頭", "飲品", "泡麵", "零食") #必需品商品
 #Vegetarian <- 0 #是否為素食(0為否, 1為是, 3為不限)
 
@@ -43,14 +46,12 @@ maxGen <- 500 #世代次數
 
 
 #----使用者需輸入的參數(假設)----
-maxVolume <- 52*38*28 #最大箱子體積
-maxPrice <- 1500 #最大金額
-maxWeight <- 13000 #最大重量
-#exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 2) #將要剔除的品牌
-nonRequiredValues <- 14 #選擇性商品的數量
-#dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
 dietHabit <- "素食"
-userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE)
+userItemValues <- 16 #使用者需要的數量
+maxPrice <- 1500 #最大金額
+exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
+
+#dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
 #userPreference <- c(sample(1, length(requiredList), replace = TRUE), sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE))
 #preferenceDF <- data.frame(種類 = c(requiredList, nonRequiredList), 喜好 = userPreference)
 
@@ -320,15 +321,15 @@ preference_match <- function(good_data, require_goods, non_require_goods, user_p
 
 
 #剔除品牌的方法
-# except_brand <- function(good_data, except_brand_list) {
-#   #good_data: 原始商品資料集
-#   #except_brand_list: 剔除品牌的名稱
-#   
-#   for (i in 1:length(except_brand_list)) {
-#     good_data <- good_data[good_data$'廠牌'!=except_brand_list[i],] #將要剔除的廠牌移除
-#   }
-#   return(good_data)
-# }
+except_brand <- function(good_data, except_brand_list) {
+  #good_data: 原始商品資料集
+  #except_brand_list: 剔除品牌的名稱
+
+  for (i in 1:length(except_brand_list)) {
+    good_data <- good_data[good_data$'廠牌'!=except_brand_list[i],] #將要剔除的廠牌移除
+  }
+  return(good_data)
+}
 
 
 
@@ -338,6 +339,7 @@ diet_select <- function(good_data, diet_habit_list) {
   
   if(diet_habit_list=="素食") {
     good_data <- good_data[good_data$'葷素'==diet_habit_list,] #如果是素食就將屬於素食的產品篩選出來
+    good_data$'種類' <- factor(good_data$種類)
   }
   
   return(good_data)
@@ -527,14 +529,14 @@ total_weight <- function(gene_list) {
   return(gene_list)
 }
 
-#偏好的適應度方法(未完成)
-fitness_preference <- function(gene_list) {
+#偏好的適應度方法
+fitness_preference <- function(gene_list, require_goods, non_require_values) {
   #被選擇出的基因清單
   print("開始計算偏好適應函數...")
   for(i in 1:length(gene_list)) {
     reuslt <- 1
-    for (k in 1:sum(length(requiredList), length(nonRequiredList))) {
-      temp_preferencd <- 1+as.numeric((geneList[[i]][[1]]$'Preference'[k])^2 - 1) / sum(1:length(nonRequiredList)) #偏好的計算公式
+    for (k in 1:sum(length(require_goods), non_require_values)) {
+      temp_preferencd <- 1+as.numeric((geneList[[i]][[1]]$'Preference'[k])^2 - 1) / sum(1:non_require_values) #偏好的計算公式
       reuslt <- reuslt*temp_preferencd
     }
     gene_list[[i]]["fitPreference"] <- list(reuslt)
@@ -750,6 +752,7 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
         temp_log <- as.numeric(table(tempChrom_A$'chromosome'==tempChrom_B$'chromosome')["TRUE"]) 
         
         if(temp_log == get_chrom_length) {
+          print("跳出")
           break
         }
       }
@@ -911,13 +914,23 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
 
 
 #----執行----
+#葷素的方法
+goodData <- diet_select(good_data = goodData, diet_habit_list = dietHabit)
+
+
+level <- levels(goodData$種類)
+requiredList <- level[order(nchar(level), level)][1:7]
+nonRequiredList <- level[order(nchar(level), level)][-1:-length(requiredList)]
+nonRequiredValues <-  userItemValues-length(requiredList) #選擇性商品的數量
+#nonRequiredValues <- length(nonRequiredList) #選擇性商品的數量
+userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE)
+
 goodData <- preference_match(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, user_preference = userPreference)
 
 #剔除掉不想要的品牌
-#goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
+goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
 
-#葷素的方法
-goodData <- diet_select(good_data = goodData, diet_habit_list = dietHabit)
+
 
 #產生初始口(遵照popAmount數量)
 geneList <- list()
@@ -938,7 +951,7 @@ geneList <- total_weight(gene_list = geneList)
 
 #計算偏好適應度(目前僅計算總偏好值)
 fitnessPreference <- list()
-fitnessPreference <- fitness_preference(gene_list = geneList)
+fitnessPreference <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues)
 
 #計算體積適應度
 fitnessVolumeAfter <- list()
