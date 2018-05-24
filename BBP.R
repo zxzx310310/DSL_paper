@@ -13,14 +13,21 @@ goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇�
 
 #----資料初始化(資料庫)----
 #if (!require("RMySQL")) install.packages("RMySQL")
+pkgs = "RMySQL"
+pkgs = pkgs[!( pkgs %in% installed.packages()[,"Package"] )]
+if(length(pkgs)) install.packages(pkgs) #確認是否有此套件, 若無就安裝
 library(RMySQL)
 
 mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
 dbSendQuery(mydb,"SET NAMES big5")
 result <- dbSendQuery(mydb, 'SELECT * FROM classicbase;')
-
 sourceData <- fetch(result, n = -1)
+dbClearResult(result)
+dbDisconnect(mydb)
+
 sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
+
+
 names(sourceData)[1] <- "產品代號"
 names(sourceData)[2] <- "品名"
 names(sourceData)[3] <- "單價"
@@ -558,7 +565,8 @@ fitness_preference <- function(gene_list, require_goods, non_require_values) {
   for(i in 1:length(gene_list)) {
     reuslt <- 1
     for (k in 1:sum(length(require_goods), non_require_values)) {
-      temp_preferencd <- 1+as.numeric((geneList[[i]][[1]]$'Preference'[k])^2 - 1) / sum(1:non_require_values) #偏好的計算公式
+      #temp_preferencd <- 1+as.numeric((geneList[[i]][[1]]$'Preference'[k])^2 - 1) / sum(1:non_require_values) #偏好的計算公式
+      temp_preferencd <- 1+as.numeric((gene_list[[i]][[1]]$'Preference'[k])^2 - 1) / sum((1:(length(require_goods)+non_require_values))^2) #偏好的計算公式
       reuslt <- reuslt*temp_preferencd
     }
     gene_list[[i]]["fitPreference"] <- list(reuslt)
@@ -941,7 +949,7 @@ goodData <- diet_select(good_data = goodData, diet_habit_list = dietHabit)
 
 
 level <- levels(goodData$種類)
-requiredList <- level[order(nchar(level), level)][1:7]
+requiredList <- level[order(nchar(level), level)][1:6]
 nonRequiredList <- level[order(nchar(level), level)][-1:-length(requiredList)]
 nonRequiredValues <-  userItemValues-length(requiredList) #選擇性商品的數量
 #nonRequiredValues <- length(nonRequiredList) #選擇性商品的數量
@@ -1030,8 +1038,17 @@ for (i in 1:maxGen) {
   print(paste("============第", i, "代============"))
 } 
 
-plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
-write.csv(x = newPopulation[[1]][[1]][c(-12, -13)], file = "solution.csv", row.names = FALSE)
+nowDateTime <- unlist(strsplit(as.character(Sys.time()), split = " ")) #切割日期與時間
+resultDF <- newPopulation[[1]][[1]][-12] #移除不必要欄位
+resultDF <- cbind(resultDF, 日期戳記 = nowDateTime[1], 時間戳記 = nowDateTime[2]) #增加時間的戳記
 
+mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
+dbSendQuery(mydb,"SET NAMES big5")
+dbWriteTable(mydb, name = "history", value = resultDF, append = TRUE, field.types=list(產品代號 = "varchar(100)", 品名 = "varchar(100)", 單價 = "int(100)", 體積 = "double(10,2)", 廠牌 = "varchar(100)", 長 = "double(10,2)", 寬 = "double(10,2)", 高 = "double(10,2)", 種類 = "	varchar(100)", 葷素 = "	varchar(100)", 重量 = "int(100)", Preference = "int(100)", 日期戳記 = "varchar(100)", 時間戳記 = "varchar(100)"), row.names = FALSE) #資料庫編碼請設定big5_chinese_ci
+dbDisconnect(mydb)
+
+
+#plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
+#write.csv(x = newPopulation[[1]][[1]][-12], file = "solution.csv", row.names = FALSE)
 #resultDF<- newPopulation[[1]][[1]][,-11] #去除selected的欄位
 #write.csv(resultDF, file = "outputList.csv", row.names = FALSE) #輸出最佳的裝箱清單
