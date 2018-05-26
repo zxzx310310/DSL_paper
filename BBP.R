@@ -953,7 +953,8 @@ requiredList <- level[order(nchar(level), level)][1:6]
 nonRequiredList <- level[order(nchar(level), level)][-1:-length(requiredList)]
 nonRequiredValues <-  userItemValues-length(requiredList) #選擇性商品的數量
 #nonRequiredValues <- length(nonRequiredList) #選擇性商品的數量
-userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE)
+#userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE)
+userPreference <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
 
 goodData <- preference_match(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, user_preference = userPreference)
 
