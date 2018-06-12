@@ -1,5 +1,4 @@
 # rsDF <- data.frame()
-# 
 # for (gen in 1:2) {
 
 
@@ -8,55 +7,54 @@ startTime <- Sys.time()
 
 #----資料初始化(本地端)----
 #sourceData <- read.csv(file = "assets/StoreData.csv") #讀取原始資料
-#sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
-#sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
-#names(sourceData)[11] <- "重量" #重新命名欄位名稱
-# categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
-
-
-#goodData <- sourceData #將原始資料複製一份
-
-#goodData <- cbind(goodData, "種類" = NA ,"Selected" = 0, "Preference" = 1) #新增被選擇欄位
-#goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
-
-#----資料初始化(資料庫)----
-#if (!require("RMySQL")) install.packages("RMySQL")
-pkgs = "RMySQL"
-pkgs = pkgs[!( pkgs %in% installed.packages()[,"Package"] )]
-if(length(pkgs)) install.packages(pkgs) #確認是否有此套件, 若無就安裝
-library(RMySQL)
-
-mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
-dbSendQuery(mydb,"SET NAMES big5")
-result <- dbSendQuery(mydb, 'SELECT * FROM classicbase;')
-sourceData <- fetch(result, n = -1)
-dbClearResult(result)
-dbDisconnect(mydb)
-
+sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
 sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
-
-
-names(sourceData)[1] <- "產品代號"
-names(sourceData)[2] <- "品名"
-names(sourceData)[3] <- "單價"
-names(sourceData)[4] <- "體積"
-names(sourceData)[5] <- "廠牌"
-names(sourceData)[6] <- "長"
-names(sourceData)[7] <- "寬"
-names(sourceData)[8] <- "高"
-names(sourceData)[9] <- "種類"
-names(sourceData)[10] <- "葷素"
 names(sourceData)[11] <- "重量" #重新命名欄位名稱
+categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
 
-sourceData$'單價' <- as.integer(sourceData$'單價')
-sourceData$'體積' <- as.numeric(sourceData$'體積')
-sourceData$'廠牌' <- as.factor(sourceData$'廠牌')
-sourceData$'種類' <- as.factor(sourceData$'種類')
-sourceData$'葷素' <- as.factor(sourceData$'葷素')
-sourceData$'重量' <- as.numeric(sourceData$'重量')
 
 goodData <- sourceData #將原始資料複製一份
+
+#goodData <- cbind(goodData, "種類" = NA ,"Selected" = 0, "Preference" = 1) #新增被選擇欄位
 goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
+
+#----資料初始化(資料庫)----
+# pkgs = "RMySQL"
+# pkgs = pkgs[!( pkgs %in% installed.packages()[,"Package"] )]
+# if(length(pkgs)) install.packages(pkgs) #確認是否有此套件, 若無就安裝 (若出錯請手動安裝package)
+# library(RMySQL)
+# 
+# mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
+# dbSendQuery(mydb,"SET NAMES big5")
+# result <- dbSendQuery(mydb, 'SELECT * FROM classicbase;')
+# sourceData <- fetch(result, n = -1)
+# dbClearResult(result)
+# dbDisconnect(mydb)
+# 
+# sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
+# 
+# 
+# names(sourceData)[1] <- "產品代號"
+# names(sourceData)[2] <- "品名"
+# names(sourceData)[3] <- "單價"
+# names(sourceData)[4] <- "體積"
+# names(sourceData)[5] <- "廠牌"
+# names(sourceData)[6] <- "長"
+# names(sourceData)[7] <- "寬"
+# names(sourceData)[8] <- "高"
+# names(sourceData)[9] <- "種類"
+# names(sourceData)[10] <- "葷素"
+# names(sourceData)[11] <- "重量" #重新命名欄位名稱
+# 
+# sourceData$'單價' <- as.integer(sourceData$'單價')
+# sourceData$'體積' <- as.numeric(sourceData$'體積')
+# sourceData$'廠牌' <- as.factor(sourceData$'廠牌')
+# sourceData$'種類' <- as.factor(sourceData$'種類')
+# sourceData$'葷素' <- as.factor(sourceData$'葷素')
+# sourceData$'重量' <- as.numeric(sourceData$'重量')
+# 
+# goodData <- sourceData #將原始資料複製一份
+# goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
 
 
 #----環境參數設定----
@@ -75,18 +73,19 @@ alpha <- 0.936 #體積鬆弛因子
 
 popAmount <- 30 #人口數量
 crossRate <- 0.9 #交配率
-mutationRate <- 0.05 #突變率
+mutationRate <- 0.1 #突變率
 eliteValues <- 1 #菁英數量
 maxGen <- 5000 #世代次數
 
 
 #----使用者需輸入的參數(假設)----
-dietHabit <- "葷食"
+dietHabit <- "葷食" #葷食與素食的選擇
 userItemValues <- 22 #使用者需要的數量
-userPrice <- "1300-1599" #使用者金額
-maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2])
-minPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[1])
-exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
+#userPrice <- "1300-1599" #使用者金額(區間)
+maxPrice <- 1500 #使用者金額
+#maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
+#minPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[1]) #進行文字切割, 並取第一個文字
+#exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
 #exceptBrandList <- '大同' #將要剔除的品牌
 
 #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
@@ -575,10 +574,12 @@ fitness_preference <- function(gene_list, require_goods, non_require_values) {
     reuslt <- 1
     for (k in 1:sum(length(require_goods), non_require_values)) {
       #temp_preferencd <- 1+as.numeric((geneList[[i]][[1]]$'Preference'[k])^2 - 1) / sum(1:non_require_values) #偏好的計算公式
-      temp_preferencd <- 1+as.numeric((gene_list[[i]][[1]]$'Preference'[k])^2 - 1) / sum((1:(length(require_goods)+non_require_values))^2) #偏好的計算公式
-      reuslt <- reuslt*temp_preferencd
+      temp_preferenced <- 1+as.numeric((gene_list[[i]][[1]]$'Preference'[k])^2 - 1) / sum((1:(length(require_goods)+non_require_values))^2) #偏好的計算公式
+      sum_preferenced <- sum(gene_list[[i]][[1]]$'Preference')
+      reuslt <- reuslt*temp_preferenced
     }
     gene_list[[i]]["fitPreference"] <- list(reuslt)
+    gene_list[[i]]["totalPreference"] <- sum_preferenced
     #print(paste("偏好適應函數:", reuslt))
     #print(paste("========第", i, "個基因========"))
   }
@@ -611,18 +612,48 @@ fitness_volume <- function(gene_list, bin_volume, volume_alpha) {
 }
 
 
-#價格的適應度方法(已加入懲罰值)
-fitness_price <- function(gene_list, limit_price, min_price) {
+#價格的適應度方法(已加入懲罰值, 價格區間)
+# fitness_price <- function(gene_list, limit_price, min_price) {
+#   #gene_list: 被選擇出的基因清單
+#   #limit_price: 價格最高限制
+#   #min_price: 最低價格
+#   #print("開始計算價格適應函數...")
+#   for (i in 1:length(gene_list)) {
+#     sum_price <- sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
+#     reuslt <- (limit_price-sum_price)/limit_price #將價格適應度算出
+#     if (sum_price <= limit_price && sum_price >= min_price) {
+#       reuslt <- reuslt + 1
+#     } else {
+#       reuslt <- reuslt + 2
+#     }
+#     # if (reuslt==0 || reuslt>0 && reuslt<=0.1) {
+#     #   reuslt <- reuslt + 1 #若適應度等於0或大於0並小於等於0.1就給予懲罰值1, e.g. (1200-1123)/1200=0.06416667, 愈接近0表示價格差距越小
+#     # } else if (reuslt>0.1 && reuslt<=0.5) {
+#     #   reuslt <- reuslt + 2 #若適應度大於0.1並小於等於0.5就給予懲罰值2
+#     # } else {
+#     #   reuslt <- reuslt + 3 #剩下結果將給予懲罰值3
+#     # }
+#     gene_list[[i]]["fitPrice"] <- reuslt
+#     #print(paste("價格適應函數:", reuslt))
+#     #print(paste("========第", i, "個基因========"))
+#   }
+#   return(gene_list)
+# }
+
+#價格的適應度方法(已加入懲罰值, 單個價格)
+fitness_price <- function(gene_list, limit_price) {
   #gene_list: 被選擇出的基因清單
   #limit_price: 價格最高限制
   #print("開始計算價格適應函數...")
   for (i in 1:length(gene_list)) {
     sum_price <- sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
     reuslt <- (limit_price-sum_price)/limit_price #將價格適應度算出
-    if (sum_price <= limit_price && sum_price >= min_price) {
-      reuslt <- reuslt + 1
-    } else {
+    if (sum_price > limit_price) {
+      reuslt <- reuslt + 4
+    } else if(sum_price <= limit_price && sum_price >= limit_price-250){
       reuslt <- reuslt + 2
+    } else {
+      reuslt <- reuslt + 1
     }
     # if (reuslt==0 || reuslt>0 && reuslt<=0.1) {
     #   reuslt <- reuslt + 1 #若適應度等於0或大於0並小於等於0.1就給予懲罰值1, e.g. (1200-1123)/1200=0.06416667, 愈接近0表示價格差距越小
@@ -632,6 +663,7 @@ fitness_price <- function(gene_list, limit_price, min_price) {
     #   reuslt <- reuslt + 3 #剩下結果將給予懲罰值3
     # }
     gene_list[[i]]["fitPrice"] <- reuslt
+    gene_list[[i]]["totalPrice"] <- sum_price
     #print(paste("價格適應函數:", reuslt))
     #print(paste("========第", i, "個基因========"))
   }
@@ -979,7 +1011,7 @@ userPreference <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
 goodData <- preference_match(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, user_preference = userPreference)
 
 #剔除掉不想要的品牌
-goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
+#goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
 
 
 
@@ -1010,7 +1042,8 @@ fitnessVolumeAfter <- fitness_volume(gene_list = fitnessPreference, bin_volume =
 
 #計算價格適應度
 fitnessPriceAfter <- list()
-fitnessPriceAfter <- fitness_price(gene_list = fitnessVolumeAfter, limit_price = maxPrice, min_price = minPrice)
+#fitnessPriceAfter <- fitness_price(gene_list = fitnessVolumeAfter, limit_price = maxPrice, min_price = minPrice)
+fitnessPriceAfter <- fitness_price(gene_list = fitnessVolumeAfter, limit_price = maxPrice)
 
 #計算總體適應度
 fitnessTotalAfter <- list()
@@ -1026,7 +1059,8 @@ mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutat
 
 #計算新一代基因的價格及體積的適應函數
 mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
-mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice, min_price = minPrice)
+#mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice, min_price = minPrice)
+mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
 mutationAfter <- fitness_total(gene_list = mutationAfter)
 
 
@@ -1040,6 +1074,8 @@ newPopulation <- new_population(first_gene = fitnessTotalAfter, second_gene = mu
 
 gen_values_best <- vector() #紀錄最好的基因總體適應函數
 gen_values_loss <- vector() #紀錄最差的基因總體適應函數
+gen_price_best <- vector()
+gen_preference_best <- vector()
 for (i in 1:maxGen) {
   #開始進行基因演算
   crossAfter <- list()
@@ -1049,26 +1085,33 @@ for (i in 1:maxGen) {
   mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
   
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
-  mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice, min_price = minPrice)
+  #mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice, min_price = minPrice)
+  mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
   mutationAfter <- fitness_total(gene_list = mutationAfter)
   
   newPopulation <- new_population(first_gene = newPopulation, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
   
-  gen_values_best[i] <- newPopulation[[1]]$totalFit
-  gen_values_loss[i] <- newPopulation[[20]]$totalFit
+  gen_values_best[i] <- newPopulation[[1]]$totalFit #紀錄最佳的總體適應函數
+  gen_values_loss[i] <- newPopulation[[20]]$totalFit #紀錄最差的總體適應函數
+  gen_price_best[i] <- newPopulation[[1]]$totalPrice #紀錄最佳的總價格
+  gen_preference_best[i] <- newPopulation[[1]]$totalPreference #紀錄最佳的總價格
   print(paste("============第", i, "代============"))
 } 
 
-nowDateTime <- unlist(strsplit(as.character(Sys.time()), split = " ")) #切割日期與時間
-resultDF <- newPopulation[[1]][[1]][-12] #移除不必要欄位
-resultDF <- cbind(resultDF, 日期戳記 = nowDateTime[1], 時間戳記 = nowDateTime[2]) #增加時間的戳記
+#nowDateTime <- unlist(strsplit(as.character(Sys.time()), split = " ")) #切割日期與時間
+#resultDF <- newPopulation[[1]][[1]][-12] #移除不必要欄位
+#resultDF <- cbind(resultDF, 日期戳記 = nowDateTime[1], 時間戳記 = nowDateTime[2]) #增加時間的戳記
 
 # mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
 # dbSendQuery(mydb,"SET NAMES big5") 
 # dbWriteTable(mydb, name = "history", value = resultDF, append = TRUE, field.types=list(產品代號 = "varchar(100)", 品名 = "varchar(100)", 單價 = "int(100)", 體積 = "double(10,2)", 廠牌 = "varchar(100)", 長 = "double(10,2)", 寬 = "double(10,2)", 高 = "double(10,2)", 種類 = "	varchar(100)", 葷素 = "	varchar(100)", 重量 = "int(100)", Preference = "int(100)", 日期戳記 = "varchar(100)", 時間戳記 = "varchar(100)"), row.names = FALSE) #資料庫編碼請設定big5_chinese_ci
 # dbDisconnect(mydb)
 
-#plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
+plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
+plot(x = gen_price_best, y = gen_preference_best, main = "裝箱演算法", xlab = "總價格", ylab = "總偏好")
+min(gen_price_best)
+min(gen_preference_best)
+
 #write.csv(x = newPopulation[[1]][[1]][-12], file = "solution.csv", row.names = FALSE)
 #resultDF<- newPopulation[[1]][[1]][,-11] #去除selected的欄位
 #write.csv(resultDF, file = "outputList.csv", row.names = FALSE) #輸出最佳的裝箱清單
