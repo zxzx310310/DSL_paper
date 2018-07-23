@@ -513,7 +513,6 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
     #重量的硬性條件
     #先開始判別第一次產生的初始人口總重量有沒有超過預先的最大值, 若有就繼續隨機選擇商品出來做初始人口, 直到總重量沒有大於最大值
     
-    #print(paste("重量超過:", sum_weight, ">", limit_weight))
     temp_good <- good_data #重新給一次原始資料, 因selected欄位有被修改過
     
     for (i in 1:length(require_goods)) {
@@ -590,8 +589,8 @@ total_weight <- function(gene_list) {
 #偏好的適應度方法(算式分母為偏好1~偏好的最大值)
 fitness_preference <- function(gene_list, require_goods, non_require_values, user_preference) {
   #被選擇出的基因清單
-  #print("開始計算偏好適應函數...")
-  max_preference <- max(user_preference)
+
+    max_preference <- max(user_preference)
   for(i in 1:length(gene_list)) {
     reuslt <- 1
     for (k in 1:sum(length(require_goods), non_require_values)) {
@@ -601,8 +600,6 @@ fitness_preference <- function(gene_list, require_goods, non_require_values, use
     }
     gene_list[[i]]["fitPreference"] <- list(reuslt)
     gene_list[[i]]["totalPreference"] <- sum_preferenced
-    #print(paste("偏好適應函數:", reuslt))
-    #print(paste("========第", i, "個基因========"))
   }
   return(gene_list)
 }
@@ -613,7 +610,7 @@ fitness_volume <- function(gene_list, bin_volume, volume_alpha) {
   #gene_list: 被選擇出的基因清單
   #bin_volume: 箱子的乘積
   #volume_alpha: 箱子的體積鬆弛因子
-  #print("開始計算體積適應函數...")
+
   for (i in 1:length(gene_list)) {
     limit_volume <- bin_volume*volume_alpha #體積與鬆弛因子相乘
     sum_volume <- sum(gene_list[[i]][[1]]$'體積') #將最大限制體積減去每個基因的總體積
@@ -626,8 +623,6 @@ fitness_volume <- function(gene_list, bin_volume, volume_alpha) {
       reuslt <- reuslt + 3 #剩下結果將給予懲罰值3
     }
     gene_list[[i]]["fitVolume"] <- reuslt 
-    #print(paste("體積適應函數:", reuslt))
-    #print(paste("========第", i, "個基因========"))
   }
   return(gene_list)
 }
@@ -665,7 +660,7 @@ fitness_volume <- function(gene_list, bin_volume, volume_alpha) {
 fitness_price <- function(gene_list, limit_price) {
   #gene_list: 被選擇出的基因清單
   #limit_price: 價格最高限制
-  #print("開始計算價格適應函數...")
+
   for (i in 1:length(gene_list)) {
     sum_price <- sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
     reuslt <- (limit_price-sum_price)/limit_price #將價格適應度算出
@@ -685,8 +680,6 @@ fitness_price <- function(gene_list, limit_price) {
     }
     gene_list[[i]]["fitPrice"] <- reuslt
     gene_list[[i]]["totalPrice"] <- sum_price
-    #print(paste("價格適應函數:", reuslt))
-    #print(paste("========第", i, "個基因========"))
   }
   return(gene_list)
 }
@@ -695,15 +688,11 @@ fitness_price <- function(gene_list, limit_price) {
 fitness_total <- function(gene_list) {
   #gene_list: 被選擇出的基因清單
   
-  #print("開始計算總體適應函數...")
   sum_fit <- unlist(lapply(fitnessPriceAfter, function(x) x$fitVolume*x$fitPrice))
   
   for (i in 1:length(gene_list)) {
     sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
-    
     gene_list[[i]]["totalFit"] <- sum_fit
-    #print(paste("總體適應函數:", sum_fit))
-    #print(paste("========第", i, "個基因========"))
   }
   return(gene_list)
 }
@@ -828,8 +817,6 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       while (tempChrom_A$'totalWeight' > limit_weight || tempChrom_B$'totalWeight' > limit_weight && length(tempChrom_A$chromosome)!=length(unique(tempChrom_A$chromosome))) {
         loop_value <- loop_value+1
         
-        #print(paste("重量超過:", tempChrom_A$'totalWeight', "或", tempChrom_B$'totalWeight', ">", limit_weight, "或 有重複值"))
-        
         get_index <- as.vector(sample(which(get_cross_state!=1),2)) #重新抽取要被交配的基因
         divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #重新隨機選擇切割地方(採雙點交配)
         
@@ -859,20 +846,14 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
         #   break
         # }
       }
-      
       tempChrom_A$'crossState' <- 1
       tempChrom_B$'crossState' <- 1
       gene_list[[get_index[1]]] <- tempChrom_A
       gene_list[[get_index[2]]] <- tempChrom_B
-      
-      #print("交配囉!")
-      #print(paste("========第", i, "對========"))
     } else {
       #亂數大於交配率, 則不進行交配
       gene_list[[get_index[1]]]$'crossState' <- 1
       gene_list[[get_index[2]]]$'crossState' <- 1
-      #print("沒交配!")
-      #print(paste("========第", i, "對========"))
     }
   }
   return(gene_list)
@@ -986,13 +967,11 @@ mutation_FN <- function(good_data, gene_list, mutation_rate, require_goods, non_
   
   get_chrom_length <- length(require_goods)+non_require_values #基因染色體的長度
   temp_list <- gene_list #先將資料給另外一個變數
-  #print("開始突變")
-  
+
   for(i in 1:length(gene_list)) {
     mutation_index <- as.numeric(sample(get_chrom_length, 1)) #隨機取得要突變的位置
     rnd_mutation_rate <- runif(n = 1, min = 0, max = 1) #產生亂數
-    #print(paste("亂數突變率:", rnd_mutation_rate)) #顯示亂數的突變率
-    
+
     if(rnd_mutation_rate <= mutation_rate){
       mutation_category <- as.character(temp_list[[i]][[1]][mutation_index,]$'種類') #取得基因中要被突變的染色體商品種類
       mutation_list <- soure_data[soure_data$'種類'==mutation_category,] #取得原始資料中符合要被突變的商品種類
@@ -1025,12 +1004,7 @@ mutation_FN <- function(good_data, gene_list, mutation_rate, require_goods, non_
       temp_list[[i]][[1]][mutation_index,] <- mutation_list[rnd_mutation_value,] #將商品進行變異
       temp_list[[i]]$'chromosome'[mutation_index] <- as.character(mutation_list[rnd_mutation_value,]$'產品代號') #將基因進行變異
       temp_list[[i]]$'totalWeight' <- sum_weight
-      
-      #print("完成突變!")
-    } else {
-      #print(paste(rnd_mutation_rate, ">=", mutation_rate)) #顯示目前突變率
     }
-    #print(paste("========第", i, "次========"))
   }
   return(temp_list)
 }
@@ -1054,13 +1028,12 @@ new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
   
   result_pop <- list() #初始最終結果族群清單
   
+  
   last_list <- head(order(unlist(lapply(new_pop, function(x) x$totalFit)), decreasing = FALSE), pop_amount) #取得popAmount(數量)的族群
-  for (z in 1:length(elite_values)) {
+  for (z in 1:elite_values) {
     #將最好的適應函數設定為精英值, 並放入新的群組
     new_pop[[last_list[z]]]$'elite' <- 1
     result_pop[[z]] <- new_pop[[last_list[z]]] #將菁英的基因放入新的族群中
-    #print(paste("菁英編碼:", unlist(result_pop[[z]]$'chromosome')))
-    #print(paste("菁英的總體適應函數:", result_pop[[z]]$'totalFit'))
   }
   
   for (k in (length(elite_values)+1):pop_amount) {
