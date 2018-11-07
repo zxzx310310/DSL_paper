@@ -17,9 +17,9 @@ maxWeight <- 16000 #最大重量
 alpha <- 0.936 #體積鬆弛因子
 popAmount <- 30 #人口數量
 crossRate <- 0.9 #交配率
-mutationRate <- 0.1 #突變率
-eliteValues <- 1 #菁英數量
-maxGen <- 100 #世代次數
+mutationRate <- 0.2 #突變率
+eliteValues <- round(popAmount*0.1) #菁英數量
+maxGen <- 10000 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
@@ -36,8 +36,14 @@ maxPrice <- 1500 #使用者金額
 #preferenceDF <- data.frame(種類 = c(requiredList, nonRequiredList), 喜好 = userPreference)
 
 #----Function----
-#偏好值與類別合併
+#偏好值與類別合併:
+#將使用者對商品種類的偏好與原始商品資料進行合併成一個Data Frame, 使原始資料有使用者對每個商品的品項偏好
 preference_match <- function(good_data, require_goods, non_require_goods, user_preference) {
+  #gene_list: 被選擇出的基因清單
+  #require_goods: 必要性的商品清單
+  #non_require_goods: 不必要性的商品清單
+  #user_preference: 使用者對商品種類的偏好
+  
   total_list <- as.character(c(require_goods, non_require_goods)) #將必需性商品與選擇性商品類別合併
   good_preference <- data.frame(category = total_list, preference = c(sample(1, length(require_goods), replace = TRUE), user_preference)) #將商品類別和偏好值合併為DF型態
   
@@ -49,7 +55,8 @@ preference_match <- function(good_data, require_goods, non_require_goods, user_p
 }
 
 
-#剔除品牌的方法
+#剔除品牌的方法:
+#在開始演算法前先將該品牌給移除
 except_brand <- function(good_data, except_brand_list) {
   #good_data: 原始商品資料集
   #except_brand_list: 剔除品牌的名稱
@@ -61,7 +68,9 @@ except_brand <- function(good_data, except_brand_list) {
 }
 
 
-#飲食習慣(葷或素食)
+#飲食習慣(葷或素食):
+#在開始演算法前先將該飲食習慣給加入
+#若為葷食則包含素食和葷食, 反之只有素食
 diet_select <- function(good_data, diet_habit_list) {
   #good_data: 原始商品資料集
   #diet_habit_list: 葷食或素食的選擇
@@ -75,7 +84,8 @@ diet_select <- function(good_data, diet_habit_list) {
 }
 
 
-#初始人口方法(無素食, 選擇性商品為參數, 重量為硬性條件) 
+#初始人口方法(重量為硬性條件):
+#隨機先產生染色體, 產出之染色體必定重量要符合預設設定
 initial_pop <- function(good_data, require_goods, non_require_goods, non_require_values, limit_weight) {
   #good_data: 原始商品資料集
   #require_goods: 必要性的商品清單
@@ -108,7 +118,8 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
 }
 
 
-#編碼染色體
+#編碼染色體:
+#必要性商品必定方在最前段, 選擇性商品必定放在後段
 create_chromosome <- function(gene_list) {
   #gene_list: 被選擇出的基因清單
   for(i in 1:length(gene_list)) {
@@ -122,6 +133,7 @@ create_chromosome <- function(gene_list) {
 #計算總重量
 total_weight <- function(gene_list) {
   #gene_list: 被選擇出的基因清單
+  
   for(i in 1:length(gene_list)) {
     sum_weight <- sum(gene_list[[i]][[1]]$'重量')
     gene_list[[i]]["totalWeight"] <- list(sum_weight) 
@@ -130,9 +142,13 @@ total_weight <- function(gene_list) {
 }
 
 
-#偏好的適應度方法(算式分母為偏好1~偏好的最大值)
+#偏好的適應度方法(算式分母為偏好值1~偏好的最大值)
 fitness_preference <- function(gene_list, require_goods, non_require_values, user_preference) {
-  #被選擇出的基因清單
+  #gene_list: 被選擇出的基因清單
+  #require_goods: 必要性的商品清單
+  #non_require_goods: 不必要性的商品清單
+  #user_preference: 使用者對商品種類的偏好
+  
   max_preference <- max(user_preference)
   for(i in 1:length(gene_list)) {
     reuslt <- 1
@@ -153,10 +169,11 @@ fitness_volume <- function(gene_list, bin_volume, volume_alpha) {
   #gene_list: 被選擇出的基因清單
   #bin_volume: 箱子的乘積
   #volume_alpha: 箱子的體積鬆弛因子
+  
   for (i in 1:length(gene_list)) {
     limit_volume <- bin_volume*volume_alpha #體積與鬆弛因子相乘
     sum_volume <- sum(gene_list[[i]][[1]]$'體積') #將最大限制體積減去每個基因的總體積
-    subtraction_volume <- limit_volume-sum_volume
+    subtraction_volume <- limit_volume-sum_volume #容積上限與選擇商品之總體積的差額
     reuslt <- abs(subtraction_volume)/limit_volume #將體積適應度算出
     if (subtraction_volume==0) {
       reuslt <- reuslt + 1 #若適應度等於0就給予懲罰值1, e.g. (49795.2-27749.25)/49795.2=0.4427324, 愈接近0表示價格差距越小
@@ -171,13 +188,14 @@ fitness_volume <- function(gene_list, bin_volume, volume_alpha) {
 }
 
 
-#價格的適應度方法(已加入懲罰值, 單個價格)
+#價格的適應度方法(已加入懲罰值)
 fitness_price <- function(gene_list, limit_price) {
   #gene_list: 被選擇出的基因清單
   #limit_price: 價格最高限制
+  
   for (i in 1:length(gene_list)) {
     sum_price <- sum(gene_list[[i]][[1]]$'單價') #將最大限制金額減去每個基因的總金額
-    subtraction_price <- limit_price-sum_price
+    subtraction_price <- limit_price-sum_price #預算與商品組合之總價格的差額
     reuslt <- abs(subtraction_price)/limit_price #將價格適應度算出
     if (subtraction_price==0) {
       reuslt <- reuslt + 1
@@ -195,6 +213,7 @@ fitness_price <- function(gene_list, limit_price) {
 #總體的適應度方法
 fitness_total <- function(gene_list) {
   #gene_list: 被選擇出的基因清單
+  
   sum_fit <- unlist(lapply(fitnessPriceAfter, function(x) x$fitVolume*x$fitPrice))
   
   for (i in 1:length(gene_list)) {
@@ -205,60 +224,99 @@ fitness_total <- function(gene_list) {
 }
 
 
-#選擇(輪盤法)
-selection <- function() {
+#選擇(競賽法)-1:
+#從父母中隨機挑選出兩個染色體, 這兩染色體互相比較總適應度, 越低者獲勝, 將被複製至交配池中, 直至交配池內的數量與人口數相同
+selection_first <- function(gene_list, pop_amount) {
+  #gene_list: 被選擇出的基因清單
+  #pop_amount: 人口數量
+  result <- list()
+  for (i in 1:pop_amount) {
+    compare_list <- sample(gene_list, 2) #隨機挑選兩個染色體
+    if (compare_list[[1]]$'totalFit'<compare_list[[2]]$'totalFit') {
+      result[[i]] <- compare_list[[1]]
+    } else if (compare_list[[1]]$'totalFit'>compare_list[[2]]$'totalFit') {
+      result[[i]] <- compare_list[[2]]
+    } else {
+      result[[i]] <- sample(compare_list, 1)
+    }
+  }
   
+  return(result)
+}
+
+#選擇(競賽法)-2:
+#從父母中隨機挑選出兩個染色體, 這兩染色體互相比較總適應度, 越低者獲勝, 將被複製至交配池中
+#直至交配池內的數量與剩餘人口數(人口數-除菁英數量)相同
+selection_second <- function(gene_list, pop_amount, elite_list) {
+  #gene_list: 被選擇出的基因清單
+  #pop_amount: 人口數量
+  #elite_list: 菁英清單
+  
+  result <- list()
+  for (i in 1:(pop_amount-length(elite_list))) {
+    compare_list <- sample(gene_list, 2) #隨機挑選兩個染色體
+    if (compare_list[[1]]$'totalFit'<compare_list[[2]]$'totalFit') {
+      result[[i]] <- compare_list[[1]]
+    } else if (compare_list[[1]]$'totalFit'>compare_list[[2]]$'totalFit') {
+      result[[i]] <- compare_list[[2]]
+    } else {
+      result[[i]] <- sample(compare_list, 1)
+    }
+  }
+  
+  result <- append(result, elite_list)
+  return(result)
 }
 
 
 #交配(雙點交配)-需考慮適應函數值(包含懲罰值)、交配率和重量限制
 cross_over <- function(gene_list, require_goods, non_require_values, cross_rate, limit_weight) {
+  get_chrom_length <- length(require_goods)+non_require_values #取得染色體長度
   
   for (i in 1:length(gene_list)) {
-    #先給予交配狀態, 0表示未交配, 1表示已交配
-    gene_list[[i]]["crossState"] <- 0
+    gene_list[[i]]["crossState"] <- 0 #先給予交配狀態, 0表示未交配, 1表示已交配
   }
-  get_chrom_length <- length(require_goods)+non_require_values #取得染色體長度
-  #print("開始交配")
   
   for(i in 1:c(length(gene_list)/2)){
     get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState)) #給定目前交配狀態
     rnd_cross_rate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
+    get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
     
     if(rnd_cross_rate<=cross_rate) {
       #亂數小於等於交配率, 則進行交配
   
-      repeat {
-        get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
-        divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
-        
-        tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
-        tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
-        tempChrom_A$'chromosome'[(divide_index[1]):divide_index[2]] <- gene_list[[get_index[2]]]$'chromosome'[(divide_index[1]):divide_index[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
-        tempChrom_B$'chromosome'[(divide_index[1]):divide_index[2]] <- gene_list[[get_index[1]]]$'chromosome'[(divide_index[1]):divide_index[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
-        tempChrom_A[[1]][(divide_index[1]):divide_index[2],] <- gene_list[[get_index[2]]][[1]][(divide_index[1]):divide_index[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
-        tempChrom_B[[1]][(divide_index[1]):divide_index[2],] <- gene_list[[get_index[1]]][[1]][(divide_index[1]):divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
-        tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
-        tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
-        
-        if(length(which(duplicated(tempChrom_A$'產品代號'))) != 0){
-          #抓出重複的物品
-          drop_rows <- which(duplicated(tempChrom_A[[1]]$'產品代號')) #抓出重複的第一個物品
-          tempChrom_A[[1]] <- tempChrom_A[[1]][-drop_rows, ] #在data frame中刪除重複的物品
-          tempChrom_A$'chromosome' <- tempChrom_A$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
-          
-        }
+      divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
+      
+      tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
+      tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
+      tempChrom_A$'chromosome'[(divide_index[1]):divide_index[2]] <- gene_list[[get_index[2]]]$'chromosome'[(divide_index[1]):divide_index[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+      tempChrom_B$'chromosome'[(divide_index[1]):divide_index[2]] <- gene_list[[get_index[1]]]$'chromosome'[(divide_index[1]):divide_index[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+      tempChrom_A[[1]][(divide_index[1]):divide_index[2],] <- gene_list[[get_index[2]]][[1]][(divide_index[1]):divide_index[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
+      tempChrom_B[[1]][(divide_index[1]):divide_index[2],] <- gene_list[[get_index[1]]][[1]][(divide_index[1]):divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
+      tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
+      tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
+      
+      if(length(which(duplicated(tempChrom_A$'產品代號'))) != 0){
+        #抓出重複的物品
+        drop_rows <- which(duplicated(tempChrom_A[[1]]$'產品代號')) #抓出重複的第一個物品
+        tempChrom_A[[1]] <- tempChrom_A[[1]][-drop_rows, ] #在data frame中刪除重複的物品
+        tempChrom_A$'chromosome' <- tempChrom_A$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
         
       }
       
-      
+      if(length(which(duplicated(tempChrom_B$'產品代號'))) != 0){
+        #抓出重複的物品
+        drop_rows <- which(duplicated(tempChrom_B[[1]]$'產品代號')) #抓出重複的第一個物品
+        tempChrom_B[[1]] <- tempChrom_B[[1]][-drop_rows, ] #在data frame中刪除重複的物品
+        tempChrom_B$'chromosome' <- tempChrom_B$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
         
+      }
+      
       tempChrom_A$'crossState' <- 1
       tempChrom_B$'crossState' <- 1
+      
       gene_list[[get_index[1]]] <- tempChrom_A
       gene_list[[get_index[2]]] <- tempChrom_B
-      
-      
     } else {
       #亂數大於交配率, 則不進行交配
       gene_list[[get_index[1]]]$'crossState' <- 1
@@ -270,61 +328,39 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
 
 
 #突變方法, 加入重量限制(突變部分直接隨機突變非必選的商品)
-mutation_FN <- function(good_data, gene_list, mutation_rate, require_goods, non_require_values, soure_data, limit_weight, non_require_goods) {
+mutation_FN <- function(good_data, gene_list, mutation_rate, require_goods, non_require_values, non_require_goods) {
   #good_data: 商品資料集
   #gene_list: 已交配過的基因人口群
   #mutation_rate: 交配率
   #require_goods: 必要性商品清單
   #non_require_values: 選擇性商品數量
-  #soure_data: 原始資料(未經過修改的)
   
-  get_chrom_length <- length(require_goods)+non_require_values #基因染色體的長度
-  temp_list <- gene_list #先將資料給另外一個變數
+  get_chrom_length <- length(require_goods)+non_require_values #基因的長度
+  good_data_non_require <- good_data[good_data$'種類' %in% non_require_goods,] #取得所有選擇性商品
   
   for(i in 1:length(gene_list)) {
     mutation_index <- as.numeric(sample(get_chrom_length, 1)) #隨機取得要突變的位置
     rnd_mutation_rate <- runif(n = 1, min = 0, max = 1) #產生亂數
     
     if(rnd_mutation_rate <= mutation_rate){
-      mutation_category <- as.character(temp_list[[i]][[1]][mutation_index,]$'種類') #取得基因中要被突變的染色體商品種類
-      mutation_list <- soure_data[soure_data$'種類'==mutation_category,] #取得原始資料中符合要被突變的商品種類
-      temp_good_data <- good_data[good_data$'種類'==mutation_category, ] #取得資料集該種類的資料
+      mutation_category <- as.character(gene_list[[i]][[1]][mutation_index,]$'種類') #取得染色體中要被突變的基因商品種類
       
-      repeat {
-        #重複篩選商品, 直到沒有與原本基因相同的商品
-        rnd_mutation_value <- sample(nrow(mutation_list), 1) #隨機取得該種類的商品
-        
-        comput_weight_list <- temp_list[[i]][[1]] #暫時將處理中的資料給另一變數
-        comput_weight_list[mutation_index,] <- mutation_list[rnd_mutation_value,] #將取得到突變的位置進行突變
-        sum_weight <- sum(comput_weight_list$'重量') #計算突變後總重量
-        
-        if(temp_list[[i]][[1]][mutation_index,]$'產品代號'!=mutation_list[rnd_mutation_value,]$'產品代號' && sum_weight < limit_weight && dim(temp_good_data)[1]!=1){
-          #當商品兩者不同時, 並突變後的重量不可大於最大重量限制, 且該突變位置的商品種類數量不等於1, 則跳出, 表示已拿到非重複的商品, 且總重量沒有超過限制, 及該商品種類在剔除品牌後數量不等於1
-          temp_list[[i]][[1]][mutation_index,] <- mutation_list[rnd_mutation_value,] #將商品進行變異
-          temp_list[[i]]$'chromosome'[mutation_index] <- as.character(mutation_list[rnd_mutation_value,]$'產品代號') #將基因進行變異
-          temp_list[[i]]$'totalWeight' <- sum_weight
-          
-          break
-        }
-        print(paste("商品重複且重量超過:", sum_weight, "<", limit_weight))
-        mutation_index <- as.numeric(sample(get_chrom_length, 1)) #隨機取得要突變的位置
-        # mutation_category <- as.character(temp_list[[i]][[1]][mutation_index,]$'種類') #取得基因中要被突變的染色體商品種類
-        # mutation_list <- soure_data[soure_data$'種類'==mutation_category,] #取得原始資料中符合要被突變的商品種類
-        # temp_good_data <- good_data[good_data$'種類'==mutation_category, ] #取得資料集該種類的資料
-        mutation_category <- sample(non_require_goods, 1)
-        mutation_list <- soure_data[soure_data$'種類'==mutation_category,]
-        temp_good_data <- good_data[good_data$'種類'==mutation_category, ]
+      if(gene_list[[i]][[1]][mutation_index,]$'種類' %in% require_goods) {
+        temp_df <- good_data[good_data$'種類'==mutation_category & good_data$'產品代號'!=gene_list[[i]][[1]][mutation_index,]$'產品代號',] #建立符合突變基因商品資料(不包含自己)
+        temp_good <- temp_df[sample(nrow(temp_df), 1), ] #從商品資料中隨機取得符合該基因突變的商品(不包含自己)
+        gene_list[[i]][[1]][mutation_index,] <-  temp_good #將商品進行變異
+        gene_list[[i]]$'chromosome'[mutation_index] <- as.character(temp_good$'產品代號') #更改編碼基因代號
+        gene_list[[i]]$'totalWeight' <- sum(gene_list[[i]][[1]]$'重量') #更新並計算總重量
+      } else {
+        temp_df <- good_data_non_require[good_data_non_require$'產品代號'!=gene_list[[i]][[1]][mutation_index,]$'產品代號',] #建立選擇性商品資料(不包含自己)
+        temp_good <- temp_df[sample(nrow(temp_df), 1), ] #從選擇性商品資料中隨機取得符合該基因突變的商品(不包含自己)
+        gene_list[[i]][[1]][mutation_index,] <-  temp_good #將商品進行變異
+        gene_list[[i]]$'chromosome'[mutation_index] <- as.character(temp_good$'產品代號') #更改編碼基因代號
+        gene_list[[i]]$'totalWeight' <- sum(gene_list[[i]][[1]]$'重量')
       }
-      
-      temp_list[[i]][[1]][mutation_index,] <- mutation_list[rnd_mutation_value,] #將商品進行變異
-      temp_list[[i]]$'chromosome'[mutation_index] <- as.character(mutation_list[rnd_mutation_value,]$'產品代號') #將基因進行變異
-      temp_list[[i]]$'totalWeight' <- sum_weight
-      
-    } else {
-      
     }
   }
-  return(temp_list)
+  return(gene_list)
 }
 
 
@@ -339,44 +375,67 @@ merge_population <- function(first_gene, second_gene, limit_weight) {
       condition_pop <- append(condition_pop, new_pop[i]) #將未超過限制重量的染色體放入新的群組
     }
   }
-  condition_pop <- condition_pop[order(sapply(condition_pop, function(x) x$fitness), decreasing=TRUE)] #將人口按照適應函數遞減排序
+  condition_pop <- condition_pop[order(sapply(condition_pop, function(x) x$totalFit), decreasing=FALSE)] #將人口按照適應函數遞減排序
   return(condition_pop)
 }
 
 
+#將精英群挑選出來
+elite_population <- function(merge_list, elite_pop) {
+  elite_list <- list()
+  elite_list <- head(merge_list[order(sapply(merge_list, function(x) x$totalFit), decreasing=FALSE)], elite_pop) #取得population(人口數量)的族群
+  return(elite_list)
+}
+
+
+#新的下一代, 須刪除屬於菁英的染色體, 並且抓取符合群組數量
+new_population <- function(merge_list, elite_list, pop_amount) {
+  elite_index <- which(merge_list %in% elite_list) #取得合併的染色體與菁英群組染色體, 一樣的index在哪
+  new_pop_list <- merge_list[-elite_index] #刪除掉已經是屬於菁英的染色體
+  new_pop_list <- head(new_pop_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
+  return(new_pop_list)
+}
+
+#更新菁英群組
+new_elite_population <- function(old_elite_list, now_elite_list, elite_pop) {
+  now_elite_list <- append(now_elite_list, old_elite_list) #將舊的菁英與新的菁英合併
+  new_elite <- head(now_elite_list[order(sapply(now_elite_list, function(x) x$totalFit), decreasing=FALSE)], elite_pop) #將菁英人口按照適應函數遞減排序, 並取得elite_pop(菁英數量)的成員
+  return(new_elite)
+}
+
 
 #此代與下代合併的方法, 並挑選出新的族群(採用菁英政策)
-new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
-  #first_gene: 此代基因
-  #second_gene: 下一代基因
-  #elite_values: 菁英數量
-  #pop_amount: 族群大小
-  
-  new_pop <- list()
-  new_pop <- first_gene #將此代基因放入新的變數
-  new_pop <- append(new_pop, second_gene) #將下代基因加入變數
-  
-  for (i in 1:length(new_pop)) {
-    #產生菁英狀態
-    new_pop[[i]]["elite"] <- 0 #將菁英狀態皆設定為0, 0表示不是菁英值; 1表示被挑選為菁英值
-  }
-  
-  result_pop <- list() #初始最終結果族群清單
-  
-  last_list <- head(order(unlist(lapply(new_pop, function(x) x$totalFit)), decreasing = FALSE), pop_amount) #取得popAmount(數量)的族群
-  for (z in 1:length(elite_values)) {
-    #將最好的適應函數設定為精英值, 並放入新的群組
-    new_pop[[last_list[z]]]$'elite' <- 1
-    result_pop[[z]] <- new_pop[[last_list[z]]] #將菁英的基因放入新的族群中
-  }
-  
-  for (k in (length(elite_values)+1):pop_amount) {
-    #將剩下的基因加入到族群
-    result_pop[[k]] <- new_pop[[last_list[k]]]
-  }
-  
-  return(result_pop)
-}
+# new_population <- function(first_gene, second_gene, elite_values, pop_amount) {
+#   #first_gene: 此代基因
+#   #second_gene: 下一代基因
+#   #elite_values: 菁英數量
+#   #pop_amount: 族群大小
+#   
+#   new_pop <- list()
+#   new_pop <- first_gene #將此代基因放入新的變數
+#   new_pop <- append(new_pop, second_gene) #將下代基因加入變數
+#   
+#   for (i in 1:length(new_pop)) {
+#     #產生菁英狀態
+#     new_pop[[i]]["elite"] <- 0 #將菁英狀態皆設定為0, 0表示不是菁英值; 1表示被挑選為菁英值
+#   }
+#   
+#   result_pop <- list() #初始最終結果族群清單
+#   
+#   last_list <- head(order(unlist(lapply(new_pop, function(x) x$totalFit)), decreasing = FALSE), pop_amount) #取得popAmount(數量)的族群
+#   for (z in 1:length(elite_values)) {
+#     #將最好的適應函數設定為精英值, 並放入新的群組
+#     new_pop[[last_list[z]]]$'elite' <- 1
+#     result_pop[[z]] <- new_pop[[last_list[z]]] #將菁英的基因放入新的族群中
+#   }
+#   
+#   for (k in (length(elite_values)+1):pop_amount) {
+#     #將剩下的基因加入到族群
+#     result_pop[[k]] <- new_pop[[last_list[k]]]
+#   }
+#   
+#   return(result_pop)
+# }
 
 #----執行----
 #葷素的方法
@@ -397,6 +456,8 @@ goodData <- preference_match(good_data = goodData, require_goods = requiredList,
 #剔除掉不想要的品牌
 #goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
 
+
+##基因演算法開始
 #產生初始口(遵照popAmount數量)
 geneList <- list()
 for (i in 1:popAmount) {
@@ -410,13 +471,8 @@ geneList <- create_chromosome(gene_list = geneList)
 #計算每個基因總重量
 geneList <- total_weight(gene_list = geneList)
 
-# 計算總體積
-# totalGene <- list()
-# totalGene <- total_Volume(gene_list = geneList)
-
 #計算偏好適應度(目前僅計算總偏好值)
 fitnessPreference <- list()
-#fitnessPreference <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues)
 fitnessPreference <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
 
 #計算體積適應度
@@ -425,74 +481,102 @@ fitnessVolumeAfter <- fitness_volume(gene_list = fitnessPreference, bin_volume =
 
 #計算價格適應度
 fitnessPriceAfter <- list()
-#fitnessPriceAfter <- fitness_price(gene_list = fitnessVolumeAfter, limit_price = maxPrice, min_price = minPrice)
 fitnessPriceAfter <- fitness_price(gene_list = fitnessVolumeAfter, limit_price = maxPrice)
 
 #計算總體適應度
 fitnessTotalAfter <- list()
 fitnessTotalAfter <- fitness_total(gene_list = fitnessPriceAfter)
 
+#選擇
+selectionAfter <- selection_first(gene_list = fitnessTotalAfter, pop_amount = popAmount)
+
+#交配
+crossAfter <- list()
+crossAfter <- cross_over(gene_list = fitnessTotalAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
+
+#突變
+mutationAfter <- list()
+mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
+
+#重新計算偏好適應函數, 體積適應函數, 價格適應函數
+mutationAfter <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
+mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
+mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
+mutationAfter <- fitness_total(gene_list = mutationAfter)
+
+
+#將父母代與孩子合併
+mergeList <- list()
+mergeList <- merge_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, limit_weight = maxWeight)
+
+
+#此代的菁英群組
+latestElite <- list()
+latestElite <- elite_population(merge_list = mergeList, elite_pop = eliteValues)
+
+
+#新的下一代
+newPopulation <- list()
+newPopulation <- new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
 
 #合併此代與下一代基因, 並採用菁英政策和產出新的族群
-#newPopulation <- new_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
+# newPopulation <- new_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
 
 
 gen_values_best <- vector() #紀錄最好的基因總體適應函數
 gen_values_loss <- vector() #紀錄最差的基因總體適應函數
 gen_price_best <- vector()
 gen_preference_best <- vector()
-for (i in 1:maxGen) {
+
+gen_values_best[1] <- newPopulation[[1]]$totalFit
+gen_values_loss[1] <- newPopulation[[popAmount]]$totalFit #紀錄最差的總體適應函數
+gen_price_best[1] <- newPopulation[[1]]$totalPrice #紀錄最佳的總價格
+gen_preference_best[1] <- newPopulation[[1]]$totalPreference #紀錄最佳的總偏好
+print(paste("============第", 1, "代============"))
+
+for (i in 2:maxGen) {
+  #選擇
+  selectionAfter <- selection_second(gene_list = newPopulation, pop_amount = popAmount, elite_list = latestElite)
   
-  if (i==1) {
-    #交配
-    crossAfter <- list()
-    crossAfter <- cross_over(gene_list = fitnessTotalAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
+  #交配
+  crossAfter <- list()
+  crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
     
-    #突變
-    mutationAfter <- list()
-    # mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
-    mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight, non_require_goods = nonRequiredList)
-  } else {
-    #交配
-    crossAfter <- list()
-    crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
-    
-    #突變
-    mutationAfter <- list()
-    #mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight)
-    mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, soure_data = goodData, limit_weight = maxWeight, non_require_goods = nonRequiredList)
-  }
-  
+  #突變
+  mutationAfter <- list()
+  mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
+
+  #重新計算偏好適應函數, 體積適應函數, 價格適應函數
+  mutationAfter <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
-  #mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice, min_price = minPrice)
   mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
   mutationAfter <- fitness_total(gene_list = mutationAfter)
   
-  newPopulation <- new_population(first_gene = newPopulation, second_gene = mutationAfter, elite_values = eliteValues, pop_amount = popAmount)
+  #將父母代與孩子合併
+  mergeList <- list()
+  mergeList <- merge_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, limit_weight = maxWeight)
+  
+  #此代的菁英群組
+  nowEliteLiet <- list()
+  nowEliteLiet <- elite_population(merge_list = mergeList, elite_pop = eliteValues)
+  
+  #更新舊代的菁英群組
+  latestElite <- new_elite_population(old_elite_list = latestElite, now_elite_list = nowEliteLiet, elite_pop = eliteValues)
+  
+  #下一代基因
+  newPopulation <- new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
   
   gen_values_best[i] <- newPopulation[[1]]$totalFit #紀錄最佳的總體適應函數
-  gen_values_loss[i] <- newPopulation[[20]]$totalFit #紀錄最差的總體適應函數
+  gen_values_loss[i] <- newPopulation[[popAmount]]$totalFit #紀錄最差的總體適應函數
   gen_price_best[i] <- newPopulation[[1]]$totalPrice #紀錄最佳的總價格
-  gen_preference_best[i] <- newPopulation[[1]]$totalPreference #紀錄最佳的總價格
+  gen_preference_best[i] <- newPopulation[[1]]$totalPreference #紀錄最佳的總偏好
   print(paste("============第", i, "代============"))
 } 
 
-
-
-
-#nowDateTime <- unlist(strsplit(as.character(Sys.time()), split = " ")) #切割日期與時間
-#resultDF <- newPopulation[[1]][[1]][-12] #移除不必要欄位
-#resultDF <- cbind(resultDF, 日期戳記 = nowDateTime[1], 時間戳記 = nowDateTime[2]) #增加時間的戳記
-
-# mydb = dbConnect(MySQL(), user="root", password="", dbname="rpreferdatabase", host='127.0.0.1')
-# dbSendQuery(mydb,"SET NAMES big5") 
-# dbWriteTable(mydb, name = "history", value = resultDF, append = TRUE, field.types=list(產品代號 = "varchar(100)", 品名 = "varchar(100)", 單價 = "int(100)", 體積 = "double(10,2)", 廠牌 = "varchar(100)", 長 = "double(10,2)", 寬 = "double(10,2)", 高 = "double(10,2)", 種類 = "	varchar(100)", 葷素 = "	varchar(100)", 重量 = "int(100)", Preference = "int(100)", 日期戳記 = "varchar(100)", 時間戳記 = "varchar(100)"), row.names = FALSE) #資料庫編碼請設定big5_chinese_ci
-# dbDisconnect(mydb)
-
 plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
-plot(x = gen_price_best, y = gen_preference_best, main = "裝箱演算法", xlab = "總價格", ylab = "總偏好")
-min(gen_price_best)
-min(gen_preference_best)
+#plot(x = gen_price_best, y = gen_preference_best, main = "裝箱演算法", xlab = "總價格", ylab = "總偏好")
+# min(gen_price_best)
+# min(gen_preference_best)
 
 #write.csv(x = newPopulation[[1]][[1]][-12], file = "solution.csv", row.names = FALSE)
 #resultDF<- newPopulation[[1]][[1]][,-11] #去除selected的欄位
