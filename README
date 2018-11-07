@@ -1,3 +1,18 @@
-裝箱問題之測試檔案
+裝箱問題之檔案
 
-By 2018/02/08 Jacky Bear
+DSL_paper
+ ├ assets
+ │   ├ old
+ │   │  ├ StoreData.csv
+ │   │  ├ StoreData.txt
+ │   │  └ 商品資料庫.csv
+ │   ├ StoreData.csv
+ │   ├ StoreData.txt
+ │   └ 商品資料庫.csv
+ ├ BBP.R
+ ├ MOGA_BBP_v1.R
+ ├ README
+ ├ conference.R
+ └ rBinPackingProblem.r
+
+By 2018/11/07 Jacky Bear
