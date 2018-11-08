@@ -23,7 +23,7 @@ maxGen <- 10000 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
-userItemValues <- 20 #使用者需要的數量
+userItemValues <- 26 #使用者需要的數量
 #userPrice <- "1300-1599" #使用者金額(區間)
 maxPrice <- 1500 #使用者金額
 #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
@@ -581,6 +581,10 @@ plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "�
 #write.csv(x = newPopulation[[1]][[1]][-12], file = "solution.csv", row.names = FALSE)
 #resultDF<- newPopulation[[1]][[1]][,-11] #去除selected的欄位
 #write.csv(resultDF, file = "outputList.csv", row.names = FALSE) #輸出最佳的裝箱清單
+library(ggplot2)
+temp_DF <- data.frame("世代數" = c(1:length(gen_values_best)), "適應函數" = gen_values_best)
+ggplot(temp_DF, aes(x = 世代數, y = 適應函數)) + geom_line(colour = 'red')
+
 
 #----時間紀錄(結束)----
 endTime <- Sys.time()
