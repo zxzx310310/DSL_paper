@@ -19,7 +19,7 @@ popAmount <- 30 #人口數量
 crossRate <- 0.9 #交配率
 mutationRate <- 0.2 #突變率
 eliteValues <- round(popAmount*0.1) #菁英數量
-maxGen <- 10000 #世代次數
+maxGen <- 100 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
@@ -229,6 +229,7 @@ fitness_total <- function(gene_list) {
 selection_first <- function(gene_list, pop_amount) {
   #gene_list: 被選擇出的基因清單
   #pop_amount: 人口數量
+  
   result <- list()
   for (i in 1:pop_amount) {
     compare_list <- sample(gene_list, 2) #隨機挑選兩個染色體
@@ -265,6 +266,32 @@ selection_second <- function(gene_list, pop_amount, elite_list) {
   }
   
   result <- append(result, elite_list)
+  return(result)
+}
+
+
+#選擇(競賽法)-3:
+#從將基因加入父母中,並隨機挑選出兩個染色體, 這兩染色體互相比較總適應度, 越低者獲勝, 將被複製至交配池中
+#直至交配池內的數量與人口數相同
+selection_third <- function(gene_list, pop_amount, elite_list) {
+  #gene_list: 被選擇出的基因清單
+  #pop_amount: 人口數量
+  #elite_list: 菁英清單
+  
+  gene_list <- append(gene_list, elite_list) #合併父母染色體與菁英染色體
+  gene_list <- sample(gene_list, length(gene_list)) #將染色體的排序打亂
+  result <- list()
+  for (i in 1:pop_amount) {
+    compare_list <- sample(gene_list, 2) #隨機挑選兩個染色體
+    if (compare_list[[1]]$'totalFit'<compare_list[[2]]$'totalFit') {
+      result[[i]] <- compare_list[[1]]
+    } else if (compare_list[[1]]$'totalFit'>compare_list[[2]]$'totalFit') {
+      result[[i]] <- compare_list[[2]]
+    } else {
+      result[[i]] <- sample(compare_list, 1)
+    }
+  }
+
   return(result)
 }
 
@@ -487,7 +514,8 @@ fitnessPriceAfter <- fitness_price(gene_list = fitnessVolumeAfter, limit_price =
 fitnessTotalAfter <- list()
 fitnessTotalAfter <- fitness_total(gene_list = fitnessPriceAfter)
 
-#選擇
+#選擇(1)
+selectionAfter <- list()
 selectionAfter <- selection_first(gene_list = fitnessTotalAfter, pop_amount = popAmount)
 
 #交配
@@ -535,8 +563,13 @@ gen_preference_best[1] <- newPopulation[[1]]$totalPreference #紀錄最佳的總
 print(paste("============第", 1, "代============"))
 
 for (i in 2:maxGen) {
-  #選擇
+  #選擇(2)
+  selectionAfter <- list()
   selectionAfter <- selection_second(gene_list = newPopulation, pop_amount = popAmount, elite_list = latestElite)
+  
+  #選擇(3)
+  # selectionAfter <- list()
+  # selectionAfter <- selection_third(gene_list = newPopulation, pop_amount = popAmount, elite_list = latestElite)
   
   #交配
   crossAfter <- list()
