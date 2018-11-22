@@ -2,7 +2,6 @@
 startTime <- Sys.time()
 
 #----資料初始化(本地端)----
-#sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
 sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
 sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
 names(sourceData)[11] <- "重量" #重新命名欄位名稱
@@ -263,7 +262,7 @@ selection_second <- function(gene_list, pop_amount, elite_list) {
     } else if (compare_list[[1]]$'totalFit'>compare_list[[2]]$'totalFit') {
       result[[i]] <- compare_list[[2]]
     } else {
-      result[[i]] <- sample(compare_list, 1)
+      result[i] <- sample(compare_list, 1)
     }
   }
   
@@ -420,8 +419,12 @@ elite_population <- function(merge_list, elite_pop) {
 #新的下一代, 須刪除屬於菁英的染色體, 並且抓取符合群組數量
 new_population <- function(merge_list, elite_list, pop_amount) {
   elite_index <- which(merge_list %in% elite_list) #取得合併的染色體與菁英群組染色體, 一樣的index在哪
-  new_pop_list <- merge_list[-elite_index] #刪除掉已經是屬於菁英的染色體
-  new_pop_list <- head(new_pop_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
+  if(length(elite_index)!=0){
+    new_pop_list <- merge_list[-elite_index] #刪除掉已經是屬於菁英的染色體
+    new_pop_list <- head(new_pop_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
+  } else {
+    new_pop_list <- head(merge_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
+  }
   return(new_pop_list)
 }
 
@@ -522,14 +525,14 @@ selectionAfter <- selection_first(gene_list = fitnessTotalAfter, pop_amount = po
 
 #交配
 crossAfter <- list()
-crossAfter <- cross_over(gene_list = fitnessTotalAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
+crossAfter <- cross_over(gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
 
 #突變
 mutationAfter <- list()
 mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
 
 #重新計算偏好適應函數, 體積適應函數, 價格適應函數
-mutationAfter <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
+mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
 mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
 mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
 mutationAfter <- fitness_total(gene_list = mutationAfter)
@@ -558,10 +561,10 @@ gen_values_loss <- vector() #紀錄最差的基因總體適應函數
 gen_price_best <- vector()
 gen_preference_best <- vector()
 
-gen_values_best[1] <- newPopulation[[1]]$totalFit
+gen_values_best[1] <- latestElite[[1]]$totalFit
 gen_values_loss[1] <- newPopulation[[popAmount]]$totalFit #紀錄最差的總體適應函數
-gen_price_best[1] <- newPopulation[[1]]$totalPrice #紀錄最佳的總價格
-gen_preference_best[1] <- newPopulation[[1]]$totalPreference #紀錄最佳的總偏好
+gen_price_best[1] <- latestElite[[1]]$totalPrice #紀錄最佳的總價格
+gen_preference_best[1] <- latestElite[[1]]$totalPreference #紀錄最佳的總偏好
 print(paste("============第", 1, "代============"))
 
 for (i in 2:maxGen) {
@@ -571,25 +574,25 @@ for (i in 2:maxGen) {
   
   #選擇(3)
   # selectionAfter <- list()
-  # selectionAfter <- selection_third(gene_list = newPopulation, pop_amount = popAmount, elite_list = latestElite)
+  # selectionAfter <- selection_third(gene_list = selectionAfter, pop_amount = popAmount, elite_list = latestElite)
   
   #交配
   crossAfter <- list()
-  crossAfter <- cross_over(gene_list = newPopulation, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
+  crossAfter <- cross_over(gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
     
   #突變
   mutationAfter <- list()
   mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
 
   #重新計算偏好適應函數, 體積適應函數, 價格適應函數
-  mutationAfter <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
+  mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume, volume_alpha = alpha) 
   mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
   mutationAfter <- fitness_total(gene_list = mutationAfter)
   
   #將父母代與孩子合併
   mergeList <- list()
-  mergeList <- merge_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, limit_weight = maxWeight)
+  mergeList <- merge_population(first_gene = newPopulation, second_gene = mutationAfter, limit_weight = maxWeight)
   
   #此代的菁英群組
   nowEliteLiet <- list()
@@ -601,10 +604,10 @@ for (i in 2:maxGen) {
   #下一代基因
   newPopulation <- new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
   
-  gen_values_best[i] <- newPopulation[[1]]$totalFit #紀錄最佳的總體適應函數
+  gen_values_best[i] <- latestElite[[1]]$totalFit #紀錄最佳的總體適應函數
   gen_values_loss[i] <- newPopulation[[popAmount]]$totalFit #紀錄最差的總體適應函數
-  gen_price_best[i] <- newPopulation[[1]]$totalPrice #紀錄最佳的總價格
-  gen_preference_best[i] <- newPopulation[[1]]$totalPreference #紀錄最佳的總偏好
+  gen_price_best[i] <- latestElite[[1]]$totalPrice #紀錄最佳的總價格
+  gen_preference_best[i] <- latestElite[[1]]$totalPreference #紀錄最佳的總偏好
   print(paste("============第", i, "代============"))
 } 
 
