@@ -1,8 +1,11 @@
+timeTemp <- vector()
+for (loop in 1:30) {
+  
+
 #----時間紀錄(開始)----
 startTime <- Sys.time()
 
 #----資料初始化(本地端)----
-#sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
 sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
 sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
 names(sourceData)[11] <- "重量" #重新命名欄位名稱
@@ -24,7 +27,7 @@ maxGen <- 1000 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
-userItemValues <- 26 #使用者需要的數量
+userItemValues <- 30 #使用者需要的數量
 #userPrice <- "1300-1599" #使用者金額(區間)
 maxPrice <- 1500 #使用者金額
 #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
@@ -93,7 +96,7 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
   #non_require_goods: 不必要性的商品清單
   #non_require_values: 不必要性的商品數量
   #limit_weight: 最大重量限制
-
+  
   repeat {
     temp_good <- good_data #先將原始資料暫時給另外一個變數使用
     
@@ -631,3 +634,5 @@ print(sum(newPopulation[[1]][[1]]$'體積')/(maxVolume*alpha))
 print(newPopulation[[1]]$totalWeight)
 print(sum(newPopulation[[1]][[1]]$單價))
 
+timeTemp[loop] <- resultTime
+}
