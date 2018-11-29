@@ -19,7 +19,7 @@ popAmount <- 30 #人口數量
 crossRate <- 0.9 #交配率
 mutationRate <- 0.2 #突變率
 eliteValues <- round(popAmount*0.1) #菁英數量
-maxGen <- 1000 #世代次數
+maxGen <- 10000 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
@@ -621,8 +621,8 @@ plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "�
 #write.csv(resultDF, file = "outputList.csv", row.names = FALSE) #輸出最佳的裝箱清單
 library(ggplot2)
 temp_DF <- data.frame("世代數" = c(1:length(gen_values_best)), "適應函數" = gen_values_best)
-ggplot(temp_DF, aes(x = 世代數, y = 適應函數)) + geom_line(colour = 'red')
-
+p <- ggplot(temp_DF, aes(x = 世代數, y = 適應函數)) + geom_line(colour = 'red')
+p
 
 #----時間紀錄(結束)----
 endTime <- Sys.time()
