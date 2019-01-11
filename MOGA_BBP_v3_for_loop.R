@@ -8,6 +8,7 @@ for (loop in 1:10) {
   
   #----資料初始化(本地端)----
   sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
+  preferenceTable <- read.csv(file = "assets/preferenceTable.csv") #讀取商品偏好表
   sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
   names(sourceData)[11] <- "重量" #重新命名欄位名稱
   categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
@@ -27,7 +28,7 @@ for (loop in 1:10) {
   
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
-  userItemValues <- 22 #使用者需要的數量
+  userItemValues <- 26 #使用者需要的數量
   #userPrice <- "1300-1599" #使用者金額(區間)
   maxPrice <- 1500 #使用者金額
   #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
@@ -44,22 +45,21 @@ for (loop in 1:10) {
   #----Function----
   #偏好值與類別合併:
   #將使用者對商品種類的偏好與原始商品資料進行合併成一個Data Frame, 使原始資料有使用者對每個商品的品項偏好
-  preference_match <- function(good_data, require_goods, non_require_goods, user_preference) {
+  preference_match <- function(good_data, preference_table) {
     #gene_list: 被選擇出的基因清單
     #require_goods: 必要性的商品清單
     #non_require_goods: 不必要性的商品清單
     #user_preference: 使用者對商品種類的偏好
     
-    total_list <- as.character(c(require_goods, non_require_goods)) #將必需性商品與選擇性商品類別合併
-    good_preference <- data.frame(category = total_list, preference = c(sample(1, length(require_goods), replace = TRUE), user_preference)) #將商品類別和偏好值合併為DF型態
+    # total_list <- as.character(c(require_goods, non_require_goods)) #將必需性商品與選擇性商品類別合併
+    # good_preference <- data.frame(category = total_list, preference = c(sample(1, length(require_goods), replace = TRUE), user_preference)) #將商品類別和偏好值合併為DF型態
     
-    for (i in 1:dim(good_preference)[1]) {
+    for (i in 1:dim(preference_table)[1]) {
       # good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])^2
       good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])
     }
     return(good_data)
   }
-  
   
   #剔除品牌的方法:
   #在開始演算法前先將該品牌給移除
@@ -486,11 +486,10 @@ for (loop in 1:10) {
   nonRequiredList <- level[order(nchar(level), level)][-1:-length(requiredList)]
   nonRequiredValues <-  userItemValues-length(requiredList) #選擇性商品的數量
   #nonRequiredValues <- length(nonRequiredList) #選擇性商品的數量
-  userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE)
-  #userPreference <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
-  #userPreference <- c(2, 2, 4, 1, 2, 6, 1, 2, 1, 4, 3, 5, 3, 5, 3, 3)
+  #userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE) #隨機產生商品偏好
   
-  goodData <- preference_match(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, user_preference = userPreference)
+  #goodData <- preference_match(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, user_preference = userPreference)
+  goodData <- preference_match(good_data = goodData, preference_table = preferenceTable)
   
   #剔除掉不想要的品牌
   #goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
