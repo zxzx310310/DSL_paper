@@ -20,7 +20,7 @@ popAmount <- 30 #人口數量
 crossRate <- 0.9 #交配率
 mutationRate <- 0.2 #突變率
 eliteValues <- round(popAmount*0.1) #菁英數量
-maxGen <- 100 #世代次數
+maxGen <- 1000 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
@@ -124,19 +124,21 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
 bundle_FN <- function(good_data, gene_list, bunddling_table, require_goods) {
   for (i in 1:length(gene_list)) {
     for (k in 1:nrow(bunddling_table)) {
-      necessity <- which(as.character(gene_list[[i]][[1]]$'產品代號')==as.character(bunddling_table$'主要產品代號'[k]))!=0
+      necessity <- which(as.character(gene_list[[i]][[1]]$'產品代號')==as.character(bunddling_table$'主要產品代號'[k]))!=0 #檢查染色體中是否含有主要產品代號
+      collocation <- which(as.character(gene_list[[i]][[1]]$'產品代號')==as.character(bunddling_table$'搭配產品代號'[k])) #檢查染色體中是否含有搭配產品代號
+      #若有染色體中沒有含有該表內的商品, 則長度會為0 
       if (length(necessity)!=0) {
-        temp_index <- which(as.character(good_data$'產品代號')==as.character(bunddling_table$'搭配產品代號'[k]))
-        temp_row <- good_data[temp_index,]
-        
-        if (temp_row$'種類' %in% require_goods) {
-          exchanged_index <- which(as.character(gene_list[[i]][[1]]$'種類')==as.character(temp_row$'種類')) #將相同的種類(必要性商品)找出位置
-          gene_list[[i]][[1]][exchanged_index,] <- temp_row #取代掉原先的商品
-        } else {
-          exchanged_index <- which.max(gene_list[[i]][[1]]$'Preference') #將偏好較差的商品(選擇性需品)找出位置
-          gene_list[[i]][[1]][exchanged_index,] <- temp_row #取代掉原先的商品
+        if (length(collocation)==0) {
+          temp_index <- which(as.character(good_data$'產品代號')==as.character(bunddling_table$'搭配產品代號'[k])) #從原始資料中找出搭配產品的index
+          temp_row <- good_data[temp_index,] #從原始資料中抓出搭配產品的資料
+          if (temp_row$'種類' %in% require_goods) {
+            exchanged_index <- which(as.character(gene_list[[i]][[1]]$'種類')==as.character(temp_row$'種類')) #將相同的種類(必要性商品)找出位置
+            gene_list[[i]][[1]][exchanged_index,] <- temp_row #取代掉原先的商品
+          } else {
+            exchanged_index <- which.max(gene_list[[i]][[1]]$'Preference') #將偏好較差的商品(選擇性需品)找出位置
+            gene_list[[i]][[1]][exchanged_index,] <- temp_row #取代掉原先的商品
+          }
         }
-        
       }
     }
   }
