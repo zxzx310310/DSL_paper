@@ -4,6 +4,7 @@ startTime <- Sys.time()
 #----資料初始化(本地端)----
 sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
 preferenceTable <- read.csv(file = "assets/preferenceTable.csv") #讀取商品偏好表
+bundlingTable <- read.csv(file = "assets/bundlingTable.csv") #讀取搭售表
 sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
 names(sourceData)[11] <- "重量" #重新命名欄位名稱
 #categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
@@ -117,6 +118,31 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
   }
   return(selected_good) #回傳結果
 }
+
+
+#搭售商品:
+bundle_FN <- function(good_data, gene_list, bunddling_table, require_goods) {
+  for (i in 1:length(gene_list)) {
+    for (k in 1:nrow(bunddling_table)) {
+      necessity <- which(as.character(gene_list[[i]][[1]]$'產品代號')==as.character(bunddling_table$'主要產品代號'[k]))!=0
+      if (length(necessity)!=0) {
+        temp_index <- which(as.character(good_data$'產品代號')==as.character(bunddling_table$'搭配產品代號'[k]))
+        temp_row <- good_data[temp_index,]
+        
+        if (temp_row$'種類' %in% require_goods) {
+          exchanged_index <- which(as.character(gene_list[[i]][[1]]$'種類')==as.character(temp_row$'種類')) #將相同的種類(必要性商品)找出位置
+          gene_list[[i]][[1]][exchanged_index,] <- temp_row #取代掉原先的商品
+        } else {
+          exchanged_index <- which.max(gene_list[[i]][[1]]$'Preference') #將偏好較差的商品(選擇性需品)找出位置
+          gene_list[[i]][[1]][exchanged_index,] <- temp_row #取代掉原先的商品
+        }
+        
+      }
+    }
+  }
+  return(gene_list)
+}
+
 
 
 #編碼染色體:
@@ -497,6 +523,9 @@ for (i in 1:popAmount) {
   geneList[[i]] <- list(gene)
 }
 
+#搭售方法
+geneList <- bundle_FN(good_data = goodData, gene_list = geneList, bunddling_table = bundlingTable, require_goods = requiredList)
+
 #編碼染色體
 geneList <- create_chromosome(gene_list = geneList)
 
@@ -530,6 +559,9 @@ crossAfter <- cross_over(gene_list = selectionAfter, require_goods = requiredLis
 #突變
 mutationAfter <- list()
 mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
+
+#搭售方法
+mutationAfter <- bundle_FN(good_data = goodData, gene_list = mutationAfter, bunddling_table = bundlingTable, require_goods = requiredList)
 
 #重新計算偏好適應函數, 體積適應函數, 價格適應函數
 mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
@@ -581,6 +613,9 @@ for (i in 2:maxGen) {
   mutationAfter <- list()
   mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
 
+  #搭售方法
+  mutationAfter <- bundle_FN(good_data = goodData, gene_list = mutationAfter, bunddling_table = bundlingTable, require_goods = requiredList)
+  
   #重新計算偏好適應函數, 體積適應函數, 價格適應函數
   mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume) 

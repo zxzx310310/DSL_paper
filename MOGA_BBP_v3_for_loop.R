@@ -24,7 +24,7 @@ for (loop in 1:10) {
   crossRate <- 0.9 #交配率
   mutationRate <- 0.2 #突變率
   eliteValues <- round(popAmount*0.1) #菁英數量
-  maxGen <- 5000 #世代次數
+  maxGen <- 1000 #世代次數
   
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
@@ -56,7 +56,7 @@ for (loop in 1:10) {
     
     for (i in 1:dim(preference_table)[1]) {
       # good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])^2
-      good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])
+      good_data[good_data$種類==preference_table$category[i],]$Preference <- as.numeric(preference_table$preference[i])
     }
     return(good_data)
   }
@@ -150,13 +150,13 @@ for (loop in 1:10) {
   
   
   #偏好的適應度方法(算式分母為偏好值1~偏好的最大值)
-  fitness_preference <- function(gene_list, require_goods, non_require_values, user_preference) {
+  fitness_preference <- function(gene_list, require_goods, non_require_values, preference_table) {
     #gene_list: 被選擇出的基因清單
     #require_goods: 必要性的商品清單
     #non_require_goods: 不必要性的商品清單
     #user_preference: 使用者對商品種類的偏好
     
-    max_preference <- max(user_preference)
+    max_preference <- max(preference_table$preference)
     for(i in 1:length(gene_list)) {
       reuslt <- 1
       for (k in 1:sum(length(require_goods), non_require_values)) {
@@ -225,7 +225,8 @@ for (loop in 1:10) {
     sum_fit <- unlist(lapply(fitnessPriceAfter, function(x) x$fitVolume*x$fitPrice))
     
     for (i in 1:length(gene_list)) {
-      sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
+      # sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
+      sum_fit <- (gene_list[[i]]$'fitVolume'*3)*(gene_list[[i]]$'fitPrice'*1)*(gene_list[[i]]$'fitPreference'*2)
       gene_list[[i]]["totalFit"] <- sum_fit
     }
     return(gene_list)
@@ -511,7 +512,7 @@ for (loop in 1:10) {
   
   #計算偏好適應度(目前僅計算總偏好值)
   fitnessPreference <- list()
-  fitnessPreference <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
+  fitnessPreference <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
   
   #計算體積適應度
   fitnessVolumeAfter <- list()
@@ -538,7 +539,7 @@ for (loop in 1:10) {
   mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
   
   #重新計算偏好適應函數, 體積適應函數, 價格適應函數
-  mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
+  mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume) 
   mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
   mutationAfter <- fitness_total(gene_list = mutationAfter)
@@ -588,7 +589,7 @@ for (loop in 1:10) {
     mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
     
     #重新計算偏好適應函數, 體積適應函數, 價格適應函數
-    mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, user_preference = userPreference)
+    mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
     mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume) 
     mutationAfter <- fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
     mutationAfter <- fitness_total(gene_list = mutationAfter)
