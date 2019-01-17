@@ -2,15 +2,27 @@
 
 DSL_paper
  ├ assets
- │   ├ old
+ │   ├ old    //舊資料集
  │   │  ├ StoreData.csv
  │   │  ├ StoreData.txt
  │   │  └ 商品資料庫.csv
  │   ├ StoreData.csv
  │   ├ StoreData.txt
- │   └ 商品資料庫.csv
+ │   ├ preferenceTable.csv    //商品偏好表
+ │   ├ 商品資料庫.csv    //商品原始檔案-777項
+ │   ├ 商品資料庫_111.csv    //商品切割檔案-111項
+ │   ├ 商品資料庫_222.csv    //商品切割檔案-222項
+ │   ├ 商品資料庫_333.csv    //商品切割檔案-333項
+ │   ├ 商品資料庫_444.csv    //商品切割檔案-444項
+ │   ├ 商品資料庫_555.csv    //商品切割檔案-555項
+ │   └ 商品資料庫_666.csv    //商品切割檔案-666項
  ├ BBP.R
- ├ MOGA_BBP_v1.R
+ ├ MOGA_BBP_v1.R    //舊程式碼
+ ├ MOGA_BBP_v2.R    //主要程式碼
+ ├ MOGA_BBP_v2_for_loop.R    //針對MOGA_BBP_v2.R之迴圈測試檔案
+ ├ MOGA_BBP_v3.R    //為MOGA_BBP_v2.R之延續測試(懲罰值、權重)
+ ├ MOGA_BBP_v3_for_loop.R    //MOGA_BBP_v3.R之迴圈測試檔案
+ ├
  ├ README
  ├ conference.R
  └ rBinPackingProblem.r
