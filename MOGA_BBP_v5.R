@@ -23,7 +23,7 @@ maxGen <- 100 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
-userItemValues <- 22 #使用者需要的數量
+userItemValues <- 18 #使用者需要的數量
 #userPrice <- "1300-1599" #使用者金額(區間)
 maxPrice <- 1500 #使用者金額
 #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
@@ -92,7 +92,7 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
   #non_require_goods: 不必要性的商品清單
   #non_require_values: 不必要性的商品數量
   #limit_weight: 最大重量限制
-
+  
   repeat {
     temp_good <- good_data #先將原始資料暫時給另外一個變數使用
     
@@ -292,13 +292,13 @@ selection_third <- function(gene_list, pop_amount, elite_list) {
       result[[i]] <- sample(compare_list, 1)
     }
   }
-
+  
   return(result)
 }
 
 
 #交配(雙點交配)-需考慮適應函數值(包含懲罰值)、交配率和重量限制
-cross_over <- function(gene_list, require_goods, non_require_values, cross_rate, limit_weight) {
+cross_over <- function(good_data, gene_list, require_goods, non_require_goods, non_require_values, cross_rate) {
   get_chrom_length <- length(require_goods)+non_require_values #取得染色體長度
   
   for (i in 1:length(gene_list)) {
@@ -307,14 +307,12 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
   
   for(i in 1:c(length(gene_list)/2)){
     get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState)) #給定目前交配狀態
-    rnd_cross_rate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
     get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
+    rnd_cross_rate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
     
-    if(rnd_cross_rate<=cross_rate) {
+    if(rnd_cross_rate<=cross_rate){
       #亂數小於等於交配率, 則進行交配
-  
       divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
-      
       tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
       tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
       tempChrom_A$'chromosome'[(divide_index[1]):divide_index[2]] <- gene_list[[get_index[2]]]$'chromosome'[(divide_index[1]):divide_index[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
@@ -324,27 +322,36 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
       tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
       
-      if(length(which(duplicated(tempChrom_A$'種類'))) != 0){
-        #抓出重複的物品
-        drop_rows <- which(duplicated(tempChrom_A[[1]]$'種類')) #抓出重複的第一個物品
-        tempChrom_A[[1]] <- tempChrom_A[[1]][-drop_rows, ] #在data frame中刪除重複的物品
-        tempChrom_A$'chromosome' <- tempChrom_A$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
+      repeat{  
+        if(length(which(duplicated(tempChrom_A[[1]]$'種類'))) != 0){
+          #抓出重複的物品
+          repeat_index <- which(good_data$'種類' %in% as.character(tempChrom_A[[1]]$'種類')) #從資料集中找出與tempChrom_A相同的種類商品
+          temp_df <- good_data[-repeat_index,] #去除掉相同的種類商品
+          sample_item <- temp_df[sample(nrow(temp_df), 1),] #從未被選重的商品類別中隨機取物
+          drop_rows <- which(duplicated(tempChrom_A[[1]]$'種類')) #抓出重複的第一個物品
+          tempChrom_A[[1]][drop_rows,] <- sample_item #在data frame中取代重複的物品
+          tempChrom_A$'chromosome'[drop_rows] <- as.character(tempChrom_A[[1]][drop_rows,]$'產品代號') #在編碼中取代重複的物品
+        }
         
-      }
-      
-      if(length(which(duplicated(tempChrom_B$'種類'))) != 0){
-        #抓出重複的物品
-        drop_rows <- which(duplicated(tempChrom_B[[1]]$'種類')) #抓出重複的第一個物品
-        tempChrom_B[[1]] <- tempChrom_B[[1]][-drop_rows, ] #在data frame中刪除重複的物品
-        tempChrom_B$'chromosome' <- tempChrom_B$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
+        if(length(which(duplicated(tempChrom_B[[1]]$'種類'))) != 0){
+          #抓出重複的物品
+          repeat_index <- which(good_data$'種類' %in% as.character(tempChrom_B[[1]]$'種類')) #從資料集中找出與tempChrom_B相同的種類商品
+          temp_df <- good_data[-repeat_index,] #去除掉相同的種類商品
+          sample_item <- temp_df[sample(nrow(temp_df), 1),] #從未被選重的商品類別中隨機取物
+          drop_rows <- which(duplicated(tempChrom_B[[1]]$'種類')) #抓出重複的第一個物品
+          tempChrom_B[[1]][drop_rows,] <- sample_item #在data frame中取代重複的物品
+          tempChrom_B$'chromosome'[drop_rows] <- as.character(tempChrom_B[[1]][drop_rows,]$'產品代號') #在編碼中取代重複的物品
+        }
         
+        
+        if(length(which(duplicated(tempChrom_A[[1]]$'種類'))) == 0 & length(which(duplicated(tempChrom_B[[1]]$'種類'))) == 0){
+          tempChrom_A$'crossState' <- 1
+          tempChrom_B$'crossState' <- 1
+          gene_list[[get_index[1]]] <- tempChrom_A
+          gene_list[[get_index[2]]] <- tempChrom_B
+          break
+        }
       }
-      
-      tempChrom_A$'crossState' <- 1
-      tempChrom_B$'crossState' <- 1
-      
-      gene_list[[get_index[1]]] <- tempChrom_A
-      gene_list[[get_index[2]]] <- tempChrom_B
     } else {
       #亂數大於交配率, 則不進行交配
       gene_list[[get_index[1]]]$'crossState' <- 1
@@ -524,7 +531,7 @@ selectionAfter <- selection_first(gene_list = fitnessTotalAfter, pop_amount = po
 
 #交配
 crossAfter <- list()
-crossAfter <- cross_over(gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
+crossAfter <- cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_goods = nonRequiredList,non_require_values = nonRequiredValues, cross_rate = crossRate)
 
 #突變
 mutationAfter <- list()
@@ -574,12 +581,12 @@ for (i in 2:maxGen) {
   
   #交配
   crossAfter <- list()
-  crossAfter <- cross_over(gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
-    
+  crossAfter <- cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
+  
   #突變
   mutationAfter <- list()
   mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
-
+  
   #重新計算偏好適應函數, 體積適應函數, 價格適應函數
   mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
   mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume) 
