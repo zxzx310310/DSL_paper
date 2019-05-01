@@ -2,7 +2,7 @@ totalFitness <- vector()
 price <- vector()
 preference <- vector()
 volumeRate <- vector()
-for (loop in 1:10) {
+for (loop in 1:100) {
   #----時間紀錄(開始)----
   startTime <- Sys.time()
   
@@ -28,7 +28,7 @@ for (loop in 1:10) {
   
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
-  userItemValues <- 26 #使用者需要的數量
+  userItemValues <- 22 #使用者需要的數量
   #userPrice <- "1300-1599" #使用者金額(區間)
   maxPrice <- 1500 #使用者金額
   #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
@@ -226,7 +226,7 @@ for (loop in 1:10) {
     
     for (i in 1:length(gene_list)) {
       # sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
-      sum_fit <- (gene_list[[i]]$'fitVolume'*3)*(gene_list[[i]]$'fitPrice'*1)*(gene_list[[i]]$'fitPreference'*2)
+      sum_fit <- (gene_list[[i]]$'fitVolume'*2)*(gene_list[[i]]$'fitPrice'*1)*(gene_list[[i]]$'fitPreference'*1)
       gene_list[[i]]["totalFit"] <- sum_fit
     }
     return(gene_list)

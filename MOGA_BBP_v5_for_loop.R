@@ -21,15 +21,15 @@ for (loop in 1:10) {
   #----環境參數設定----
   maxVolume <- 47*32*39 #最大箱子體積
   maxWeight <- 16000 #最大重量(g)
-  popAmount <- 50 #人口數量
+  popAmount <- 100 #人口數量
   crossRate <- 0.9 #交配率
-  mutationRate <- 0.01 #突變率
+  mutationRate <- 0.2 #突變率
   eliteValues <- round(popAmount*0.1) #菁英數量
-  maxGen <- 5000 #世代次數
+  maxGen <- 100 #世代次數
   
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
-  userItemValues <- 26 #使用者需要的數量
+  userItemValues <- 22 #使用者需要的數量
   #userPrice <- "1300-1599" #使用者金額(區間)
   maxPrice <- 1500 #使用者金額
   #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
@@ -98,7 +98,7 @@ for (loop in 1:10) {
     #non_require_goods: 不必要性的商品清單
     #non_require_values: 不必要性的商品數量
     #limit_weight: 最大重量限制
-    
+  
     repeat {
       temp_good <- good_data #先將原始資料暫時給另外一個變數使用
       
@@ -107,11 +107,10 @@ for (loop in 1:10) {
         temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1    
       }
       
-      while (nrow(temp_good[temp_good$'Selected'==1,])!=c(non_require_values+length(require_goods))) {
-        category_goods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
-        get_index <- which(temp_good$'種類'==category_goods & temp_good$'Selected'!=1)
-        rnd_get_index <- sample(get_index, 1) 
-        temp_good$'Selected'[rnd_get_index] <- 1 #將被選擇的欄位改為1 
+      selected_require <- sample(non_require_goods, non_require_values)
+      for (i in 1:length(selected_require)) {
+        get_index <- sample(which(temp_good$'種類'==selected_require[i] & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
+        temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1
       }
       
       selected_good <- temp_good[temp_good$'Selected'==1,] #將被選擇的商品放入新變數中
@@ -299,7 +298,7 @@ for (loop in 1:10) {
         result[[i]] <- sample(compare_list, 1)
       }
     }
-    
+  
     return(result)
   }
   
@@ -319,7 +318,7 @@ for (loop in 1:10) {
       
       if(rnd_cross_rate<=cross_rate) {
         #亂數小於等於交配率, 則進行交配
-        
+    
         divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
         
         tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
@@ -331,17 +330,17 @@ for (loop in 1:10) {
         tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
         tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
         
-        if(length(which(duplicated(tempChrom_A$'產品代號'))) != 0){
+        if(length(which(duplicated(tempChrom_A$'種類'))) != 0){
           #抓出重複的物品
-          drop_rows <- which(duplicated(tempChrom_A[[1]]$'產品代號')) #抓出重複的第一個物品
+          drop_rows <- which(duplicated(tempChrom_A[[1]]$'種類')) #抓出重複的第一個物品
           tempChrom_A[[1]] <- tempChrom_A[[1]][-drop_rows, ] #在data frame中刪除重複的物品
           tempChrom_A$'chromosome' <- tempChrom_A$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
           
         }
         
-        if(length(which(duplicated(tempChrom_B$'產品代號'))) != 0){
+        if(length(which(duplicated(tempChrom_B$'種類'))) != 0){
           #抓出重複的物品
-          drop_rows <- which(duplicated(tempChrom_B[[1]]$'產品代號')) #抓出重複的第一個物品
+          drop_rows <- which(duplicated(tempChrom_B[[1]]$'種類')) #抓出重複的第一個物品
           tempChrom_B[[1]] <- tempChrom_B[[1]][-drop_rows, ] #在data frame中刪除重複的物品
           tempChrom_B$'chromosome' <- tempChrom_B$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
           
@@ -582,11 +581,11 @@ for (loop in 1:10) {
     #交配
     crossAfter <- list()
     crossAfter <- cross_over(gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate, limit_weight = maxWeight)
-    
+      
     #突變
     mutationAfter <- list()
     mutationAfter <- mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate, require_goods = requiredList, non_require_values = nonRequiredValues, non_require_goods = nonRequiredList)
-    
+  
     #重新計算偏好適應函數, 體積適應函數, 價格適應函數
     mutationAfter <- fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
     mutationAfter <- fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume) 
@@ -614,7 +613,7 @@ for (loop in 1:10) {
     print(paste("============第", i, "代============"))
   } 
   
-  plot(gen_values_best, main = paste("裝箱演算法-第", loop, "次"), xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
+  plot(gen_values_best, main = "裝箱演算法", xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
   
   library(ggplot2)
   temp_DF <- data.frame("世代數" = c(1:length(gen_values_best)), "適應函數" = gen_values_best)
@@ -630,12 +629,6 @@ for (loop in 1:10) {
   print(sum(newPopulation[[1]][[1]]$'體積')/(maxVolume))
   print(newPopulation[[1]]$totalWeight)
   print(sum(newPopulation[[1]][[1]]$單價))
-  
-  totalFitness[loop] <- newPopulation[[1]]$totalFit
-  price[loop] <- sum(newPopulation[[1]][[1]]$單價)
-  preference[loop] <- sum(newPopulation[[1]][[1]]$Preference)
-  volumeRate[loop] <- sum(newPopulation[[1]][[1]]$'體積')/(maxVolume)
-  timeStamp[loop] <- resultTime
 }
 
 tempDF <- data.frame(總適應函數 = totalFitness, 總價格 = price, 偏好值 = preference, 體積率 = volumeRate, 執行時間 = timeStamp)

@@ -23,6 +23,8 @@ DSL_paper
  ├ MOGA_BBP_v3.R    //為MOGA_BBP_v2.R之延續測試(懲罰值、權重)
  ├ MOGA_BBP_v3_for_loop.R    //MOGA_BBP_v3.R之迴圈測試檔案
  ├ MOGA_BBP_v4.R    //MOGA_BBP_v2.R之新增搭售方法
+ ├ MOGA_BBP_v5.R    //同一類商品僅能選一項
+ ├ MOGA_BBP_v5_for_loop.R    //針對MOGA_BBP_v5.R之迴圈測試檔案
  ├ README
  ├ conference.R
  └ rBinPackingProblem.r

@@ -19,11 +19,11 @@ popAmount <- 100 #人口數量
 crossRate <- 0.9 #交配率
 mutationRate <- 0.2 #突變率
 eliteValues <- round(popAmount*0.1) #菁英數量
-maxGen <- 10000 #世代次數
+maxGen <- 100 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
-userItemValues <- 26 #使用者需要的數量
+userItemValues <- 22 #使用者需要的數量
 #userPrice <- "1300-1599" #使用者金額(區間)
 maxPrice <- 1500 #使用者金額
 #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
@@ -101,11 +101,10 @@ initial_pop <- function(good_data, require_goods, non_require_goods, non_require
       temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1    
     }
     
-    while (nrow(temp_good[temp_good$'Selected'==1,])!=c(non_require_values+length(require_goods))) {
-      category_goods <- sample(non_require_goods, 1) #隨機挑選選擇性商品的類別
-      get_index <- which(temp_good$'種類'==category_goods & temp_good$'Selected'!=1)
-      rnd_get_index <- sample(get_index, 1) 
-      temp_good$'Selected'[rnd_get_index] <- 1 #將被選擇的欄位改為1 
+    selected_require <- sample(non_require_goods, non_require_values)
+    for (i in 1:length(selected_require)) {
+      get_index <- sample(which(temp_good$'種類'==selected_require[i] & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
+      temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1
     }
     
     selected_good <- temp_good[temp_good$'Selected'==1,] #將被選擇的商品放入新變數中
@@ -325,17 +324,17 @@ cross_over <- function(gene_list, require_goods, non_require_values, cross_rate,
       tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
       tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
       
-      if(length(which(duplicated(tempChrom_A$'產品代號'))) != 0){
+      if(length(which(duplicated(tempChrom_A$'種類'))) != 0){
         #抓出重複的物品
-        drop_rows <- which(duplicated(tempChrom_A[[1]]$'產品代號')) #抓出重複的第一個物品
+        drop_rows <- which(duplicated(tempChrom_A[[1]]$'種類')) #抓出重複的第一個物品
         tempChrom_A[[1]] <- tempChrom_A[[1]][-drop_rows, ] #在data frame中刪除重複的物品
         tempChrom_A$'chromosome' <- tempChrom_A$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
         
       }
       
-      if(length(which(duplicated(tempChrom_B$'產品代號'))) != 0){
+      if(length(which(duplicated(tempChrom_B$'種類'))) != 0){
         #抓出重複的物品
-        drop_rows <- which(duplicated(tempChrom_B[[1]]$'產品代號')) #抓出重複的第一個物品
+        drop_rows <- which(duplicated(tempChrom_B[[1]]$'種類')) #抓出重複的第一個物品
         tempChrom_B[[1]] <- tempChrom_B[[1]][-drop_rows, ] #在data frame中刪除重複的物品
         tempChrom_B$'chromosome' <- tempChrom_B$'chromosome'[-drop_rows] #在編碼中刪除重複的物品
         
