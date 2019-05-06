@@ -3,7 +3,7 @@ price <- vector()
 preference <- vector()
 volumeRate <- vector()
 timeStamp <- vector()
-for (loop in 1:50) {
+for (loop in 1:10) {
   #----時間紀錄(開始)----
   startTime <- Sys.time()
   
@@ -21,11 +21,11 @@ for (loop in 1:50) {
   #----環境參數設定----
   maxVolume <- 47*32*39 #最大箱子體積
   maxWeight <- 16000 #最大重量(g)
-  popAmount <- 20 #人口數量
-  crossRate <- 0.9 #交配率
+  popAmount <- 30 #人口數量
+  crossRate <- 1 #交配率
   mutationRate <- 0.2 #突變率
   eliteValues <- round(popAmount*0.1) #菁英數量
-  maxGen <- 10000 #世代次數
+  maxGen <- 5000 #世代次數
   
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
@@ -614,7 +614,7 @@ for (loop in 1:50) {
     newPopulation <- new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
     
     gen_values_best[i] <- latestElite[[1]]$totalFit #紀錄最佳的總體適應函數
-    gen_values_loss[i] <- newPopulation[[popAmount]]$totalFit #紀錄最差的總體適應函數
+    gen_values_loss[i] <- tail(newPopulation, 1)[[1]]$totalFit #紀錄最差的總體適應函數
     gen_price_best[i] <- latestElite[[1]]$totalPrice #紀錄最佳的總價格
     gen_preference_best[i] <- latestElite[[1]]$totalPreference #紀錄最佳的總偏好
     print(paste("============第", i, "代============"))
@@ -631,16 +631,16 @@ for (loop in 1:50) {
   endTime <- Sys.time()
   resultTime <- endTime - startTime
   print(resultTime)
-  print(newPopulation[[1]]$totalFit) #適應性
-  print(sum(newPopulation[[1]][[1]]$Preference)) #總偏好
-  print(sum(newPopulation[[1]][[1]]$'體積')/(maxVolume))
-  print(newPopulation[[1]]$totalWeight)
-  print(sum(newPopulation[[1]][[1]]$單價))
+  print(latestElite[[1]]$totalFit) #適應性
+  print(sum(latestElite[[1]][[1]]$Preference)) #總偏好
+  print(sum(latestElite[[1]][[1]]$'體積')/(maxVolume))
+  print(latestElite[[1]]$totalWeight)
+  print(sum(latestElite[[1]][[1]]$單價))
   
-  totalFitness[loop] <- newPopulation[[1]]$totalFit
-  price[loop] <- sum(newPopulation[[1]][[1]]$單價)
-  preference[loop] <- sum(newPopulation[[1]][[1]]$Preference)
-  volumeRate[loop] <- sum(newPopulation[[1]][[1]]$'體積')/(maxVolume)
+  totalFitness[loop] <- latestElite[[1]]$totalFit
+  price[loop] <- sum(latestElite[[1]][[1]]$單價)
+  preference[loop] <- sum(latestElite[[1]][[1]]$Preference)
+  volumeRate[loop] <- sum(latestElite[[1]][[1]]$'體積')/(maxVolume)
   timeStamp[loop] <- resultTime
 }
 

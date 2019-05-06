@@ -608,7 +608,7 @@ for (i in 2:maxGen) {
   newPopulation <- new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
   
   gen_values_best[i] <- latestElite[[1]]$totalFit #紀錄最佳的總體適應函數
-  gen_values_loss[i] <- newPopulation[[popAmount]]$totalFit #紀錄最差的總體適應函數
+  gen_values_loss[i] <- tail(newPopulation, 1)[[1]]$totalFit #紀錄最差的總體適應函數
   gen_price_best[i] <- latestElite[[1]]$totalPrice #紀錄最佳的總價格
   gen_preference_best[i] <- latestElite[[1]]$totalPreference #紀錄最佳的總偏好
   print(paste("============第", i, "代============"))
@@ -625,9 +625,9 @@ p
 endTime <- Sys.time()
 resultTime <- endTime - startTime
 print(resultTime)
-print(newPopulation[[1]]$totalFit) #適應性
-print(sum(newPopulation[[1]][[1]]$Preference)) #總偏好
-print(sum(newPopulation[[1]][[1]]$'體積')/(maxVolume))
-print(newPopulation[[1]]$totalWeight)
-print(sum(newPopulation[[1]][[1]]$單價))
+print(latestElite[[1]]$totalFit) #適應性
+print(sum(latestElite[[1]][[1]]$Preference)) #總偏好
+print(sum(latestElite[[1]][[1]]$'體積')/(maxVolume))
+print(latestElite[[1]]$totalWeight)
+print(sum(latestElite[[1]][[1]]$單價))
 
