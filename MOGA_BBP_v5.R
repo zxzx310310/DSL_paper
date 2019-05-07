@@ -315,10 +315,10 @@ cross_over <- function(good_data, gene_list, require_goods, non_require_goods, n
       divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
       tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
       tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
-      tempChrom_A$'chromosome'[(divide_index[1]):divide_index[2]] <- gene_list[[get_index[2]]]$'chromosome'[(divide_index[1]):divide_index[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
-      tempChrom_B$'chromosome'[(divide_index[1]):divide_index[2]] <- gene_list[[get_index[1]]]$'chromosome'[(divide_index[1]):divide_index[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
-      tempChrom_A[[1]][(divide_index[1]):divide_index[2],] <- gene_list[[get_index[2]]][[1]][(divide_index[1]):divide_index[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
-      tempChrom_B[[1]][(divide_index[1]):divide_index[2],] <- gene_list[[get_index[1]]][[1]][(divide_index[1]):divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
+      tempChrom_A$'chromosome'[divide_index[1]:divide_index[2]] <- gene_list[[get_index[2]]]$'chromosome'[divide_index[1]:divide_index[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+      tempChrom_B$'chromosome'[divide_index[1]:divide_index[2]] <- gene_list[[get_index[1]]]$'chromosome'[divide_index[1]:divide_index[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+      tempChrom_A[[1]][divide_index[1]:divide_index[2],] <- gene_list[[get_index[2]]][[1]][divide_index[1]:divide_index[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
+      tempChrom_B[[1]][divide_index[1]:divide_index[2],] <- gene_list[[get_index[1]]][[1]][divide_index[1]:divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
       tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
       tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
       
