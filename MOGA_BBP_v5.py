@@ -1,5 +1,6 @@
 import datetime
 import pandas as pd
+import numpy as np
 import random
 import copy
 
@@ -94,16 +95,16 @@ def initial_pop(good_data, require_goods, non_require_goods, non_require_values,
 def create_chromosome(gene_list):
     #gene_list: 被選擇出的基因清單
     for i in range(len(gene_list)):
-        chromosome = (geneList[i][0]['data.frame']['產品代號']).tolist()
-        geneList[i][0]['chromosome'] = chromosome
+        chromosome = (geneList[i]['data.frame']['產品代號']).tolist()
+        geneList[i]['chromosome'] = chromosome
     return(gene_list)
 
 #計算總重量
 def total_weight(gene_list):
     #gene_list: 被選擇出的基因清單
     for i in range(len(gene_list)):
-        sum_weight = (geneList[i][0]['data.frame']['重量']).sum()
-        geneList[i][0]['totalWeight'] = sum_weight
+        sum_weight = (geneList[i]['data.frame']['重量']).sum()
+        geneList[i]['totalWeight'] = sum_weight
     return(gene_list)
 
 #偏好的適應度方法(算式分母為偏好值1~偏好的最大值)
@@ -114,31 +115,170 @@ def fitness_preference(gene_list, require_goods, non_require_values, preference_
     #user_preference: 使用者對商品種類的偏好
     
     max_preference = preferenceTable['preference'].max()
+    total_preference = 0
+    for i in range(0, max_preference+1, 1):
+        total_preference = total_preference+i**2
+    
     for i in range(len(gene_list)):
         reuslt = 1
         for j in range((len(require_goods) + non_require_values)):
-            temp_preferenced = 1+(gene_list[i][0]['data.frame']['Preference'][j]**2-1) / sum(range(max_preference))
-            sum_preferenced = (gene_list[i][0]['data.frame']['Preference']).sum()
+            temp_preferenced = 1+(((gene_list[i]['data.frame']['Preference'][j]**2)-1) / total_preference)
             reuslt = reuslt*temp_preferenced
-            temp.append(reuslt)
+            #temp.append(reuslt)
+        
+        geneList[i]['fitPreference'] = reuslt
+        sum_preferenced = (gene_list[i]['data.frame']['Preference']).sum()
+        geneList[i]['totalPreference'] = sum_preferenced
+    return(gene_list)
+
+#體積的適應度方法(已加入懲罰值)
+def fitness_volume(gene_list, bin_volume):
+    #gene_list: 被選擇出的基因清單
+    #bin_volume: 箱子的乘積
+    for i in range(len(gene_list)):
+        sum_volume = (geneList[i]['data.frame']['體積']).sum() #將最大限制體積減去每個基因的總體積
+        subtraction_volume = bin_volume-sum_volume #容積上限與選擇商品之總體積的差額
+        reuslt = abs(subtraction_volume)/bin_volume #將體積適應度算出
+        
+        if (sum_volume >=(bin_volume*0.7)) & (sum_volume <=bin_volume):
+            if subtraction_volume==0:
+                reuslt = reuslt + 1 #若適應度等於0就給予懲罰值1, e.g. (49795.2-27749.25)/49795.2=0.4427324, 愈接近0表示價格差距越小
+            reuslt = reuslt + 2 #若適應度大於0就給予懲罰值2
+        reuslt = reuslt + 3
+        
+        geneList[i]['fitVolume'] = reuslt
+    return(gene_list)
+
+#價格的適應度方法(已加入懲罰值)
+def fitness_price(gene_list, limit_price):
+    #gene_list: 被選擇出的基因清單
+    #limit_price: 價格最高限制
+    for i in range(len(gene_list)):
+        sum_price = (geneList[i]['data.frame']['單價']).sum() #將最大限制金額減去每個基因的總金額
+        subtraction_price = limit_price-sum_price #預算與商品組合之總價格的差額
+        reuslt = abs(subtraction_price)/limit_price #將價格適應度算出
+        
+        if subtraction_price==0:
+            reuslt = reuslt + 1
+        elif subtraction_price>0:
+            reuslt = reuslt + 2
+        else:
+            reuslt = reuslt + 3
             
-        geneList[i][0]['fitPreference'] = 
-        geneList[i][0]['totalPreference'] = sum_preferenced
-        gene_list[[i]]["fitPreference"] <- list(reuslt)
+        geneList[i]['fitPrice'] = reuslt
+        geneList[i]['totalPrice'] = sum_price
+    return(gene_list)
+
+#總體的適應度方法
+def fitness_total(gene_list):
+    #gene_list: 被選擇出的基因清單
+    for i in range(len(gene_list)):
+        sum_fit = fitnessPriceAfter[i]['fitPrice']*fitnessPriceAfter[i]['fitVolume']*fitnessPriceAfter[i]['fitPreference']
+        geneList[i]['totalFit'] = sum_fit
+    return(gene_list)
+
+#選擇(競賽法):
+#從父母中隨機挑選出兩個染色體, 這兩染色體互相比較總適應度, 越低者獲勝, 將被複製至交配池中, 直至交配池內的數量與人口數相同
+def selection(gene_list, pop_amount):
+    #gene_list: 被選擇出的基因清單
+    #pop_amount: 人口數量
+    result = []
+    for i in range(pop_amount):
+        compare_list = random.sample(gene_list, 2)
+        if compare_list[0]['totalFit'] < compare_list[1]['totalFit']:
+            result.append(compare_list[0])
+        elif compare_list[0]['totalFit'] > compare_list[1]['totalFit']:
+            result.append(compare_list[1])
+        else:
+            result.append(random.sample(compare_list, 1))
+    return(result)
+
+#交配(雙點交配)-需考慮適應函數值(包含懲罰值)、交配率和重量限制
+def cross_over(good_data, gene_list, require_goods, non_require_goods, non_require_values, cross_rate):
+    get_chrom_length = len(require_goods)+non_require_values #取得染色體長度
+    for i in range(len(gene_list)):
+        gene_list[i]['crossState'] = 0 #先給予交配狀態, 0表示未交配, 1表示已交配
+    
+    for i in range(int(gene_list/2)):
+        get_cross_state = []
+        for j in range(len(gene_list)):
+            get_cross_state.append(j)
+            
+        get_index = random.sample(get_cross_state, 2) #抽取要被交配的基因
+        rnd_cross_rate = round(random.random(), 3) #產生亂數
+        if rnd_cross_rate<=cross_rate:
+            divide_index = sorted(random.sample(range(0, get_chrom_length), 2)) #隨機選擇切割地方(採雙點交配)
+            tempChrom_A = copy.copy(gene_list[get_index[0]]) #先將染色體給暫時變數A
+            tempChrom_B = copy.copy(gene_list[get_index[1]]) #先將染色體給暫時變數B
+            tempChrom_A['chromosome'][divide_index[0]:divide_index[1]] = copy.copy(gene_list[get_index[1]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
+            tempChrom_B['chromosome'][divide_index[0]:divide_index[1]] = copy.copy(gene_list[get_index[0]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
+            tempChrom_A['data.frame'].iloc[divide_index[0]:divide_index[1],:] = get_index[get_index[1]]['data.frame'].iloc[divide_index[0]:divide_index[1],:] #開始進行交配, 將第二個基因切割的商品給第一個基因
+            tempChrom_B['data.frame'].iloc[divide_index[0]:divide_index[1],:] = get_index[get_index[0]]['data.frame'].iloc[divide_index[0]:divide_index[1],:] #開始進行交配, 將第二個基因切割的商品給第一個基因
+            tempChrom_A['totalWeight'] = tempChrom_A['data.frame']['重量'].sum() #重新計算總重量
+            tempChrom_B['totalWeight'] = tempChrom_B['data.frame']['重量'].sum() #重新計算總重量
+        
+        while True:
+            
         
         
-  for(i in 1:length(gene_list)) {
-    reuslt <- 1
-    for (k in 1:sum(length(require_goods), non_require_values)) {
-      temp_preferenced <- 1+as.numeric((gene_list[[i]][[1]]$'Preference'[k])^2 - 1) / sum((1:max_preference)^2) #偏好的計算公式
-      sum_preferenced <- sum(gene_list[[i]][[1]]$'Preference')
-      reuslt <- reuslt*temp_preferenced
+        
+    
+    for(i in 1:c(length(gene_list)/2)){
+      get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState)) #給定目前交配狀態
+      get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
+      rnd_cross_rate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
+      
+      if(rnd_cross_rate<=cross_rate){
+        #亂數小於等於交配率, 則進行交配
+        divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
+        tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
+        tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
+        tempChrom_A$'chromosome'[divide_index[1]:divide_index[2]] <- gene_list[[get_index[2]]]$'chromosome'[divide_index[1]:divide_index[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
+        tempChrom_B$'chromosome'[divide_index[1]:divide_index[2]] <- gene_list[[get_index[1]]]$'chromosome'[divide_index[1]:divide_index[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
+        tempChrom_A[[1]][divide_index[1]:divide_index[2],] <- gene_list[[get_index[2]]][[1]][divide_index[1]:divide_index[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
+        tempChrom_B[[1]][divide_index[1]:divide_index[2],] <- gene_list[[get_index[1]]][[1]][divide_index[1]:divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
+        tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
+        tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
+        
+        repeat{  
+          if(length(which(duplicated(tempChrom_A[[1]]$'種類'))) != 0){
+            #抓出重複的物品
+            repeat_index <- which(good_data$'種類' %in% as.character(tempChrom_A[[1]]$'種類')) #從資料集中找出與tempChrom_A相同的種類商品
+            temp_df <- good_data[-repeat_index,] #去除掉相同的種類商品
+            sample_item <- temp_df[sample(nrow(temp_df), 1),] #從未被選重的商品類別中隨機取物
+            drop_rows <- which(duplicated(tempChrom_A[[1]]$'種類')) #抓出重複的第一個物品
+            tempChrom_A[[1]][drop_rows,] <- sample_item #在data frame中取代重複的物品
+            tempChrom_A$'chromosome'[drop_rows] <- as.character(tempChrom_A[[1]][drop_rows,]$'產品代號') #在編碼中取代重複的物品
+          }
+          
+          if(length(which(duplicated(tempChrom_B[[1]]$'種類'))) != 0){
+            #抓出重複的物品
+            repeat_index <- which(good_data$'種類' %in% as.character(tempChrom_B[[1]]$'種類')) #從資料集中找出與tempChrom_B相同的種類商品
+            temp_df <- good_data[-repeat_index,] #去除掉相同的種類商品
+            sample_item <- temp_df[sample(nrow(temp_df), 1),] #從未被選重的商品類別中隨機取物
+            drop_rows <- which(duplicated(tempChrom_B[[1]]$'種類')) #抓出重複的第一個物品
+            tempChrom_B[[1]][drop_rows,] <- sample_item #在data frame中取代重複的物品
+            tempChrom_B$'chromosome'[drop_rows] <- as.character(tempChrom_B[[1]][drop_rows,]$'產品代號') #在編碼中取代重複的物品
+          }
+          
+          
+          if(length(which(duplicated(tempChrom_A[[1]]$'種類'))) == 0 & length(which(duplicated(tempChrom_B[[1]]$'種類'))) == 0){
+            tempChrom_A$'crossState' <- 1
+            tempChrom_B$'crossState' <- 1
+            gene_list[[get_index[1]]] <- tempChrom_A
+            gene_list[[get_index[2]]] <- tempChrom_B
+            break
+          }
+        }
+      } else {
+        #亂數大於交配率, 則不進行交配
+        gene_list[[get_index[1]]]$'crossState' <- 1
+        gene_list[[get_index[2]]]$'crossState' <- 1
+      }
     }
-    gene_list[[i]]["fitPreference"] <- list(reuslt)
-    gene_list[[i]]["totalPreference"] <- sum_preferenced
+    return(gene_list)
   }
-  return(gene_list)
-}  
+
 
 #----執行----
 #葷素的方法
@@ -159,9 +299,10 @@ goodData = preference_match(good_data = goodData, preference_table = preferenceT
 #產生初始口(遵照popAmount數量)
 geneList = []
 for i in range(popAmount):
-    geneList.append([])
+    #geneList.append([])
     geneDict = {'data.frame': initial_pop(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, non_require_values = nonRequiredValues, limit_weight = maxWeight)}
-    geneList[i].append(geneDict)
+    #geneList[i].append(geneDict)
+    geneList.append(geneDict)
     
 #編碼染色體
 geneList = create_chromosome(gene_list = geneList)
@@ -170,5 +311,19 @@ geneList = create_chromosome(gene_list = geneList)
 geneList = total_weight(gene_list = geneList)
 
 #計算偏好適應度(目前僅計算總偏好值)
-#fitnessPreference <- list()
-#fitnessPreference <- fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
+fitnessPreference = fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
+
+#計算體積適應度
+fitnessVolumeAfter = fitness_volume(gene_list = fitnessPreference, bin_volume = maxVolume)
+
+#計算價格適應度
+fitnessPriceAfter = fitness_price(gene_list = fitnessVolumeAfter, limit_price = maxPrice)
+
+#計算總體適應度
+fitnessTotalAfter = fitness_total(gene_list = fitnessPriceAfter)
+
+#選擇(競賽法)
+selectionAfter = selection(gene_list = fitnessTotalAfter, pop_amount = popAmount)
+
+#交配
+#crossAfter = cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_goods = nonRequiredList,non_require_values = nonRequiredValues, cross_rate = crossRate)
