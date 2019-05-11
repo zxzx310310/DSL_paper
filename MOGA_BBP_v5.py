@@ -1,6 +1,5 @@
 import datetime
 import pandas as pd
-import numpy as np
 import random
 import copy
 
@@ -20,7 +19,7 @@ goodData['Selected'], goodData['Preference'] = 0, 1 #新增被選擇欄位
 maxVolume = 47*32*39 #最大箱子體積
 maxWeight = 16000 #最大重量(g)
 popAmount = 20 #人口數量
-crossRate = 0.9 #交配率
+crossRate = 1 #交配率
 mutationRate = 0.2 #突變率
 eliteValues = round(popAmount*0.1) #菁英數量
 maxGen = 100 #世代次數
@@ -194,90 +193,71 @@ def selection(gene_list, pop_amount):
     return(result)
 
 #交配(雙點交配)-需考慮適應函數值(包含懲罰值)、交配率和重量限制
-def cross_over(good_data, gene_list, require_goods, non_require_goods, non_require_values, cross_rate):
+def cross_over(good_data, gene_list, require_goods, non_require_values, cross_rate):
     get_chrom_length = len(require_goods)+non_require_values #取得染色體長度
-    for i in range(len(gene_list)):
-        gene_list[i]['crossState'] = 0 #先給予交配狀態, 0表示未交配, 1表示已交配
+    get_cross_index = [] #宣告一個放所有染色體index的陣列
+    for j in range(len(gene_list)):
+            get_cross_index.append(j) #把所有染色體的index放入
     
-    for i in range(int(gene_list/2)):
-        get_cross_state = []
-        for j in range(len(gene_list)):
-            get_cross_state.append(j)
-            
-        get_index = random.sample(get_cross_state, 2) #抽取要被交配的基因
+    for i in range(int(len(gene_list)/2)):
+        get_index = random.sample(get_cross_index, 2) #抽取要被交配的基因
         rnd_cross_rate = round(random.random(), 3) #產生亂數
         if rnd_cross_rate<=cross_rate:
             divide_index = sorted(random.sample(range(0, get_chrom_length), 2)) #隨機選擇切割地方(採雙點交配)
-            tempChrom_A = copy.copy(gene_list[get_index[0]]) #先將染色體給暫時變數A
-            tempChrom_B = copy.copy(gene_list[get_index[1]]) #先將染色體給暫時變數B
-            tempChrom_A['chromosome'][divide_index[0]:divide_index[1]] = copy.copy(gene_list[get_index[1]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
-            tempChrom_B['chromosome'][divide_index[0]:divide_index[1]] = copy.copy(gene_list[get_index[0]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
-            tempChrom_A['data.frame'].iloc[divide_index[0]:divide_index[1],:] = get_index[get_index[1]]['data.frame'].iloc[divide_index[0]:divide_index[1],:] #開始進行交配, 將第二個基因切割的商品給第一個基因
-            tempChrom_B['data.frame'].iloc[divide_index[0]:divide_index[1],:] = get_index[get_index[0]]['data.frame'].iloc[divide_index[0]:divide_index[1],:] #開始進行交配, 將第二個基因切割的商品給第一個基因
+            tempChrom_A = copy.deepcopy(gene_list[get_index[0]]) #先將染色體給暫時變數A
+            print('取得基因: {0}, 切割點: {1}'.format(get_index, divide_index))
+            print('得到資料(原始) {0}'.format(tempChrom_A['chromosome']))
+            tempChrom_B = copy.deepcopy(gene_list[get_index[1]]) #先將染色體給暫時變數B
+            tempChrom_A['chromosome'][divide_index[0]:divide_index[1]] = copy.deepcopy(gene_list[get_index[1]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
+            print('給了一段資料(基因) {0}'.format(tempChrom_A['chromosome']))
+            tempChrom_B['chromosome'][divide_index[0]:divide_index[1]] = copy.deepcopy(gene_list[get_index[0]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
+            tempChrom_A['data.frame'].iloc[divide_index[0]:divide_index[1],:] = copy.deepcopy(gene_list[get_index[1]]['data.frame'].iloc[divide_index[0]:divide_index[1],:]) #開始進行交配, 將第二個基因切割的商品給第一個基因
+            print('給了一段資料(dataframe) {0}'.format(tempChrom_A['chromosome']))
+            tempChrom_B['data.frame'].iloc[divide_index[0]:divide_index[1],:] = copy.deepcopy(gene_list[get_index[0]]['data.frame'].iloc[divide_index[0]:divide_index[1],:]) #開始進行交配, 將第二個基因切割的商品給第一個基因
             tempChrom_A['totalWeight'] = tempChrom_A['data.frame']['重量'].sum() #重新計算總重量
+            print('計算重量 {0}'.format(tempChrom_A['chromosome']))
             tempChrom_B['totalWeight'] = tempChrom_B['data.frame']['重量'].sum() #重新計算總重量
         
-        while True:
+            tempChrom_A_length = len(tempChrom_A['data.frame'])
+            tempChrom_A['data.frame'] = tempChrom_A['data.frame'].drop_duplicates('種類') #刪除重複的類別
             
+            while len(tempChrom_A['data.frame']) < tempChrom_A_length:
+                tempChrom_A_category = tempChrom_A['data.frame']['種類'].tolist() #抓出tempChrom_A中data frame的所有種類
+                temp_df = copy.deepcopy(good_data) #將原始資料複製一份
+                for j in range(len(tempChrom_A_category)):
+                    temp_df = temp_df.loc[temp_df['種類']!=tempChrom_A_category[j]] #挑出tempChrom_A中沒有的種類品項
+                    random_df_row = temp_df.sample(1) #隨機取得沒有重複種類的品項
+                    tempChrom_A['data.frame'] = tempChrom_A['data.frame'].append(random_df_row) #將隨機取出的資料放入染色體中
+                    tempChrom_A['data.frame'] = tempChrom_A['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
+                    tempChrom_A['data.frame'] = tempChrom_A['data.frame'].reset_index(drop=True) #將index重新排序
+                    tempChrom_A['chromosome'] = tempChrom_A['data.frame']['產品代號'].tolist() #重新將染色體編碼
+                    
+            
+            tempChrom_B_length = len(tempChrom_B['data.frame'])
+            tempChrom_B['data.frame'] = tempChrom_B['data.frame'].drop_duplicates('種類') #刪除重複的類別
+            
+            while len(tempChrom_B['data.frame']) < tempChrom_B_length:
+                tempChrom_B_category = tempChrom_B['data.frame']['種類'].tolist() #抓出tempChrom_B中data frame的所有種類
+                temp_df = copy.deepcopy(good_data) #將原始資料複製一份
+                for j in range(len(tempChrom_B_category)):
+                    temp_df = temp_df.loc[temp_df['種類']!=tempChrom_B_category[j]] #挑出tempChrom_B中沒有的種類品項
+                    random_df_row = temp_df.sample(1) #雖機取得沒有重複種類的品項
+                    tempChrom_B['data.frame'] = tempChrom_B['data.frame'].append(random_df_row) #將隨機取出的資料放入染色體中
+                    tempChrom_B['data.frame'] = tempChrom_B['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
+                    tempChrom_B['data.frame'] = tempChrom_B['data.frame'].reset_index(drop=True) #將index重新排序
+                    tempChrom_B['chromosome'] = tempChrom_B['data.frame']['產品代號'].tolist() #重新將染色體編碼  
+                    
         
-        
-        
-    
-    for(i in 1:c(length(gene_list)/2)){
-      get_cross_state <- unlist(lapply(gene_list, function(x) x$crossState)) #給定目前交配狀態
-      get_index <- as.vector(sample(which(get_cross_state!=1),2)) #抽取要被交配的基因
-      rnd_cross_rate <- round(runif(n = 1, min = 0, max = 1),3) #產生亂數
-      
-      if(rnd_cross_rate<=cross_rate){
-        #亂數小於等於交配率, 則進行交配
-        divide_index <- sort(as.vector(sample(get_chrom_length, 2))) #隨機選擇切割地方(採雙點交配)
-        tempChrom_A <- gene_list[[get_index[1]]] #先將染色體給暫時變數A
-        tempChrom_B <- gene_list[[get_index[2]]] #先將染色體給暫時變數B
-        tempChrom_A$'chromosome'[divide_index[1]:divide_index[2]] <- gene_list[[get_index[2]]]$'chromosome'[divide_index[1]:divide_index[2]] #開始進行交配, 將第二個基因切割的染色體給第一個基因
-        tempChrom_B$'chromosome'[divide_index[1]:divide_index[2]] <- gene_list[[get_index[1]]]$'chromosome'[divide_index[1]:divide_index[2]] #開始進行交配, 將第一個基因切割的染色體給第二個基因
-        tempChrom_A[[1]][divide_index[1]:divide_index[2],] <- gene_list[[get_index[2]]][[1]][divide_index[1]:divide_index[2],] #開始進行交配, 將第二個基因切割的商品給第一個基因
-        tempChrom_B[[1]][divide_index[1]:divide_index[2],] <- gene_list[[get_index[1]]][[1]][divide_index[1]:divide_index[2],] #開始進行交配, 將第一個基因切割的商品給第二個基因
-        tempChrom_A$'totalWeight' <- sum(tempChrom_A[[1]]$'重量') #重新計算總重量
-        tempChrom_B$'totalWeight' <- sum(tempChrom_B[[1]]$'重量') #重新計算總重量
-        
-        repeat{  
-          if(length(which(duplicated(tempChrom_A[[1]]$'種類'))) != 0){
-            #抓出重複的物品
-            repeat_index <- which(good_data$'種類' %in% as.character(tempChrom_A[[1]]$'種類')) #從資料集中找出與tempChrom_A相同的種類商品
-            temp_df <- good_data[-repeat_index,] #去除掉相同的種類商品
-            sample_item <- temp_df[sample(nrow(temp_df), 1),] #從未被選重的商品類別中隨機取物
-            drop_rows <- which(duplicated(tempChrom_A[[1]]$'種類')) #抓出重複的第一個物品
-            tempChrom_A[[1]][drop_rows,] <- sample_item #在data frame中取代重複的物品
-            tempChrom_A$'chromosome'[drop_rows] <- as.character(tempChrom_A[[1]][drop_rows,]$'產品代號') #在編碼中取代重複的物品
-          }
-          
-          if(length(which(duplicated(tempChrom_B[[1]]$'種類'))) != 0){
-            #抓出重複的物品
-            repeat_index <- which(good_data$'種類' %in% as.character(tempChrom_B[[1]]$'種類')) #從資料集中找出與tempChrom_B相同的種類商品
-            temp_df <- good_data[-repeat_index,] #去除掉相同的種類商品
-            sample_item <- temp_df[sample(nrow(temp_df), 1),] #從未被選重的商品類別中隨機取物
-            drop_rows <- which(duplicated(tempChrom_B[[1]]$'種類')) #抓出重複的第一個物品
-            tempChrom_B[[1]][drop_rows,] <- sample_item #在data frame中取代重複的物品
-            tempChrom_B$'chromosome'[drop_rows] <- as.character(tempChrom_B[[1]][drop_rows,]$'產品代號') #在編碼中取代重複的物品
-          }
-          
-          
-          if(length(which(duplicated(tempChrom_A[[1]]$'種類'))) == 0 & length(which(duplicated(tempChrom_B[[1]]$'種類'))) == 0){
-            tempChrom_A$'crossState' <- 1
-            tempChrom_B$'crossState' <- 1
-            gene_list[[get_index[1]]] <- tempChrom_A
-            gene_list[[get_index[2]]] <- tempChrom_B
-            break
-          }
-        }
-      } else {
-        #亂數大於交配率, 則不進行交配
-        gene_list[[get_index[1]]]$'crossState' <- 1
-        gene_list[[get_index[2]]]$'crossState' <- 1
-      }
-    }
+            gene_list[get_index[0]]['data.frame'] = copy.deepcopy(tempChrom_A['data.frame']) #將處理完畢的data frame放回去
+            print('應該塞入的值: ', tempChrom_A['data.frame'])
+            print('真正塞進去的值: ', gene_list[get_index[0]]['data.frame'])
+            gene_list[get_index[1]]['data.frame'] = copy.deepcopy(tempChrom_B['data.frame']) #將處理完畢的data frame放回去
+            get_cross_index.remove(get_index[0]) #刪除已交配完的染色體(if內)
+            get_cross_index.remove(get_index[1]) #刪除已交配完的染色體(if內)
+        else:
+            get_cross_index.remove(get_index[0]) #刪除已交配完的染色體(if外)
+            get_cross_index.remove(get_index[1]) #刪除已交配完的染色體(if外)
     return(gene_list)
-  }
 
 
 #----執行----
@@ -324,6 +304,6 @@ fitnessTotalAfter = fitness_total(gene_list = fitnessPriceAfter)
 
 #選擇(競賽法)
 selectionAfter = selection(gene_list = fitnessTotalAfter, pop_amount = popAmount)
-
+temp = copy.deepcopy(selectionAfter)
 #交配
-#crossAfter = cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_goods = nonRequiredList,non_require_values = nonRequiredValues, cross_rate = crossRate)
+crossAfter = cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
