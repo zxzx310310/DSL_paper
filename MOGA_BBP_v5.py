@@ -205,17 +205,12 @@ def cross_over(good_data, gene_list, require_goods, non_require_values, cross_ra
         if rnd_cross_rate<=cross_rate:
             divide_index = sorted(random.sample(range(0, get_chrom_length), 2)) #隨機選擇切割地方(採雙點交配)
             tempChrom_A = copy.deepcopy(gene_list[get_index[0]]) #先將染色體給暫時變數A
-            print('取得基因: {0}, 切割點: {1}'.format(get_index, divide_index))
-            print('得到資料(原始) {0}'.format(tempChrom_A['chromosome']))
             tempChrom_B = copy.deepcopy(gene_list[get_index[1]]) #先將染色體給暫時變數B
             tempChrom_A['chromosome'][divide_index[0]:divide_index[1]] = copy.deepcopy(gene_list[get_index[1]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
-            print('給了一段資料(基因) {0}'.format(tempChrom_A['chromosome']))
             tempChrom_B['chromosome'][divide_index[0]:divide_index[1]] = copy.deepcopy(gene_list[get_index[0]]['chromosome'][divide_index[0]:divide_index[1]]) #開始進行交配, 將第二個基因切割的染色體給第一個基因
             tempChrom_A['data.frame'].iloc[divide_index[0]:divide_index[1],:] = copy.deepcopy(gene_list[get_index[1]]['data.frame'].iloc[divide_index[0]:divide_index[1],:]) #開始進行交配, 將第二個基因切割的商品給第一個基因
-            print('給了一段資料(dataframe) {0}'.format(tempChrom_A['chromosome']))
             tempChrom_B['data.frame'].iloc[divide_index[0]:divide_index[1],:] = copy.deepcopy(gene_list[get_index[0]]['data.frame'].iloc[divide_index[0]:divide_index[1],:]) #開始進行交配, 將第二個基因切割的商品給第一個基因
             tempChrom_A['totalWeight'] = tempChrom_A['data.frame']['重量'].sum() #重新計算總重量
-            print('計算重量 {0}'.format(tempChrom_A['chromosome']))
             tempChrom_B['totalWeight'] = tempChrom_B['data.frame']['重量'].sum() #重新計算總重量
         
             tempChrom_A_length = len(tempChrom_A['data.frame'])
@@ -231,7 +226,6 @@ def cross_over(good_data, gene_list, require_goods, non_require_values, cross_ra
                     tempChrom_A['data.frame'] = tempChrom_A['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
                     tempChrom_A['data.frame'] = tempChrom_A['data.frame'].reset_index(drop=True) #將index重新排序
                     tempChrom_A['chromosome'] = tempChrom_A['data.frame']['產品代號'].tolist() #重新將染色體編碼
-                    
             
             tempChrom_B_length = len(tempChrom_B['data.frame'])
             tempChrom_B['data.frame'] = tempChrom_B['data.frame'].drop_duplicates('種類') #刪除重複的類別
@@ -247,16 +241,13 @@ def cross_over(good_data, gene_list, require_goods, non_require_values, cross_ra
                     tempChrom_B['data.frame'] = tempChrom_B['data.frame'].reset_index(drop=True) #將index重新排序
                     tempChrom_B['chromosome'] = tempChrom_B['data.frame']['產品代號'].tolist() #重新將染色體編碼  
                     
-        
-            gene_list[get_index[0]]['data.frame'] = copy.deepcopy(tempChrom_A['data.frame']) #將處理完畢的data frame放回去
-            print('應該塞入的值: ', tempChrom_A['data.frame'])
-            print('真正塞進去的值: ', gene_list[get_index[0]]['data.frame'])
-            gene_list[get_index[1]]['data.frame'] = copy.deepcopy(tempChrom_B['data.frame']) #將處理完畢的data frame放回去
-            get_cross_index.remove(get_index[0]) #刪除已交配完的染色體(if內)
-            get_cross_index.remove(get_index[1]) #刪除已交配完的染色體(if內)
+            gene_list[get_index[0]] = copy.copy(tempChrom_A) #將處理完畢的所有資料放回去
+            gene_list[get_index[1]] = copy.copy(tempChrom_B) #將處理完畢的所有資料放回去
+            get_cross_index.remove(get_index[0]) #刪除已交配完的染色體
+            get_cross_index.remove(get_index[1]) #刪除已交配完的染色體
         else:
-            get_cross_index.remove(get_index[0]) #刪除已交配完的染色體(if外)
-            get_cross_index.remove(get_index[1]) #刪除已交配完的染色體(if外)
+            get_cross_index.remove(get_index[0]) #刪除已交配完的染色體
+            get_cross_index.remove(get_index[1]) #刪除已交配完的染色體
     return(gene_list)
 
 
@@ -304,6 +295,7 @@ fitnessTotalAfter = fitness_total(gene_list = fitnessPriceAfter)
 
 #選擇(競賽法)
 selectionAfter = selection(gene_list = fitnessTotalAfter, pop_amount = popAmount)
-temp = copy.deepcopy(selectionAfter)
+
 #交配
 crossAfter = cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
+
