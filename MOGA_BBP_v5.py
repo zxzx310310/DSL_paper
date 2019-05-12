@@ -20,7 +20,7 @@ maxVolume = 47*32*39 #最大箱子體積
 maxWeight = 16000 #最大重量(g)
 popAmount = 20 #人口數量
 crossRate = 1 #交配率
-mutationRate = 0.2 #突變率
+mutationRate = 1 #突變率
 eliteValues = round(popAmount*0.1) #菁英數量
 maxGen = 100 #世代次數
 
@@ -221,11 +221,11 @@ def cross_over(good_data, gene_list, require_goods, non_require_values, cross_ra
                 temp_df = copy.deepcopy(good_data) #將原始資料複製一份
                 for j in range(len(tempChrom_A_category)):
                     temp_df = temp_df.loc[temp_df['種類']!=tempChrom_A_category[j]] #挑出tempChrom_A中沒有的種類品項
-                    random_df_row = temp_df.sample(1) #隨機取得沒有重複種類的品項
-                    tempChrom_A['data.frame'] = tempChrom_A['data.frame'].append(random_df_row) #將隨機取出的資料放入染色體中
-                    tempChrom_A['data.frame'] = tempChrom_A['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
-                    tempChrom_A['data.frame'] = tempChrom_A['data.frame'].reset_index(drop=True) #將index重新排序
-                    tempChrom_A['chromosome'] = tempChrom_A['data.frame']['產品代號'].tolist() #重新將染色體編碼
+                random_df_row = temp_df.sample(1) #隨機取得沒有重複種類的品項
+                tempChrom_A['data.frame'] = tempChrom_A['data.frame'].append(random_df_row) #將隨機取出的資料放入染色體中
+                tempChrom_A['data.frame'] = tempChrom_A['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
+                tempChrom_A['data.frame'] = tempChrom_A['data.frame'].reset_index(drop=True) #將index重新排序
+                tempChrom_A['chromosome'] = tempChrom_A['data.frame']['產品代號'].tolist() #重新將染色體編碼
             
             tempChrom_B_length = len(tempChrom_B['data.frame'])
             tempChrom_B['data.frame'] = tempChrom_B['data.frame'].drop_duplicates('種類') #刪除重複的類別
@@ -235,11 +235,11 @@ def cross_over(good_data, gene_list, require_goods, non_require_values, cross_ra
                 temp_df = copy.deepcopy(good_data) #將原始資料複製一份
                 for j in range(len(tempChrom_B_category)):
                     temp_df = temp_df.loc[temp_df['種類']!=tempChrom_B_category[j]] #挑出tempChrom_B中沒有的種類品項
-                    random_df_row = temp_df.sample(1) #雖機取得沒有重複種類的品項
-                    tempChrom_B['data.frame'] = tempChrom_B['data.frame'].append(random_df_row) #將隨機取出的資料放入染色體中
-                    tempChrom_B['data.frame'] = tempChrom_B['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
-                    tempChrom_B['data.frame'] = tempChrom_B['data.frame'].reset_index(drop=True) #將index重新排序
-                    tempChrom_B['chromosome'] = tempChrom_B['data.frame']['產品代號'].tolist() #重新將染色體編碼  
+                random_df_row = temp_df.sample(1) #雖機取得沒有重複種類的品項
+                tempChrom_B['data.frame'] = tempChrom_B['data.frame'].append(random_df_row) #將隨機取出的資料放入染色體中
+                tempChrom_B['data.frame'] = tempChrom_B['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
+                tempChrom_B['data.frame'] = tempChrom_B['data.frame'].reset_index(drop=True) #將index重新排序
+                tempChrom_B['chromosome'] = tempChrom_B['data.frame']['產品代號'].tolist() #重新將染色體編碼  
                     
             gene_list[get_index[0]] = copy.copy(tempChrom_A) #將處理完畢的所有資料放回去
             gene_list[get_index[1]] = copy.copy(tempChrom_B) #將處理完畢的所有資料放回去
@@ -249,6 +249,29 @@ def cross_over(good_data, gene_list, require_goods, non_require_values, cross_ra
             get_cross_index.remove(get_index[0]) #刪除已交配完的染色體
             get_cross_index.remove(get_index[1]) #刪除已交配完的染色體
     return(gene_list)
+
+#突變方法, 加入重量限制(突變部分直接隨機突變非必選的商品)
+def mutation_FN(good_data, gene_list, mutation_rate):
+    #good_data: 商品資料集
+    #gene_list: 已交配過的基因人口群
+    #mutation_rate: 交配率
+    for i in range(len(gene_list)):
+        rnd_mutation_rate = round(random.random(), 3) #產生亂數
+        mutation_data = gene_list[i]['data.frame'].sample(1) #隨機取得要突變的位置
+        mutation_index = int(mutation_data.index.values[0]) #取得該資料的index
+        mutation_id = (mutation_data['產品代號']).tolist()[0] #取得該資料的產品代號
+        if rnd_mutation_rate <= mutation_rate:
+            mutation_category = gene_list[0]['data.frame']['種類'][mutation_index] #取得染色體中要被突變的基因商品種類
+            temp_df = good_data[(good_data['種類']==mutation_category) & (good_data['產品代號']!=mutation_id)]
+            temp_good = temp_df.sample(1) #從商品資料中隨機取得符合該基因突變的商品(不包含自己)
+            gene_list[i]['data.frame'] = gene_list[i]['data.frame'].drop(gene_list[i]['data.frame'].index[mutation_index]) #將要突變的進行刪除
+            gene_list[i]['data.frame'] = gene_list[i]['data.frame'].append(temp_good) #加入新商品
+            gene_list[i]['data.frame'] = gene_list[i]['data.frame'].sort_values('產品代號') #將資料按照產品代號排序
+            gene_list[i]['data.frame'] = gene_list[i]['data.frame'].reset_index(drop=True) #將index重新排序
+            gene_list[i]['totalWeight'] = gene_list[i]['data.frame']['重量'].sum() #重新計算總重量
+            gene_list[i]['chromosome'] = gene_list[i]['data.frame']['產品代號'].tolist() #重新將染色體編碼
+    return(gene_list)
+        
 
 
 #----執行----
@@ -261,7 +284,7 @@ goodData = except_brand(good_data = goodData, except_brand_list = exceptBrandLis
 
 level = preferenceTable['category']
 requiredList = level[0:6]
-nonRequiredList = level[len(requiredList):len(level)]
+nonRequiredList = (level[len(requiredList):len(level)]).reset_index(drop = True)
 nonRequiredValues = userItemValues-len(requiredList) #選擇性商品的數量
 
 goodData = preference_match(good_data = goodData, preference_table = preferenceTable)
@@ -298,4 +321,12 @@ selectionAfter = selection(gene_list = fitnessTotalAfter, pop_amount = popAmount
 
 #交配
 crossAfter = cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
+temp = copy.deepcopy(crossAfter)
+#突變
+mutationAfter = mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate)
 
+#重新計算偏好適應函數, 體積適應函數, 價格適應函數
+#mutationAfter = fitness_preference(gene_list = copy.deepcopy(mutationAfter), require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
+#mutationAfter = fitness_volume(gene_list = copy.deepcopy(mutationAfter), bin_volume = maxVolume) 
+#mutationAfter = fitness_price(gene_list = copy.deepcopy(mutationAfter), limit_price = maxPrice)
+#mutationAfter = fitness_total(gene_list = copy.deepcopy(mutationAfter))
