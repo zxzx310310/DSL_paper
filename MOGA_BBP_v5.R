@@ -15,15 +15,15 @@ goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇�
 #----環境參數設定----
 maxVolume <- 47*32*39 #最大箱子體積
 maxWeight <- 16000 #最大重量(g)
-popAmount <- 100 #人口數量
-crossRate <- 0.9 #交配率
-mutationRate <- 0.2 #突變率
+popAmount <- 20 #人口數量
+crossRate <- 1 #交配率
+mutationRate <- 0.01 #突變率
 eliteValues <- round(popAmount*0.1) #菁英數量
-maxGen <- 100 #世代次數
+maxGen <- 50 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
-userItemValues <- 18 #使用者需要的數量
+userItemValues <- 22 #使用者需要的數量
 #userPrice <- "1300-1599" #使用者金額(區間)
 maxPrice <- 1500 #使用者金額
 #maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字

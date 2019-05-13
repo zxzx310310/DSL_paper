@@ -1,10 +1,13 @@
-import datetime
+# -*- coding: utf-8 -*-
+import time
 import pandas as pd
 import random
 import copy
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
 
 #----時間紀錄(開始)----
-startTime = datetime.datetime.now()
+startTime = time.time()
 
 #----資料初始化(本地端)----
 sourceData = pd.read_csv('assets_py/StoreData.csv') #讀取原始資料
@@ -22,7 +25,7 @@ popAmount = 20 #人口數量
 crossRate = 1 #交配率
 mutationRate = 1 #突變率
 eliteValues = round(popAmount*0.1) #菁英數量
-maxGen = 100 #世代次數
+maxGen = 50 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit = '葷食' #葷食與素食的選擇
@@ -70,7 +73,7 @@ def initial_pop(good_data, require_goods, non_require_goods, non_require_values,
     #limit_weight: 最大重量限制
     while True:
         temp_good = copy.copy(good_data) #先將原始資料暫時給另外一個變數使用    
-        for i in range(len(require_goods)):
+        for i in range(len(require_goods)): 
             get_index = (temp_good['Selected'][(temp_good['種類']==require_goods[i]) & (temp_good['Selected']!=1)]).index.tolist() #取得符合條件的資料, 並轉為list型態
             get_index = int(random.sample(get_index, 1)[0]) #隨機取得index, 並轉為整數型態
             temp_good['Selected'][get_index] = 1
@@ -102,8 +105,8 @@ def create_chromosome(gene_list):
 def total_weight(gene_list):
     #gene_list: 被選擇出的基因清單
     for i in range(len(gene_list)):
-        sum_weight = (geneList[i]['data.frame']['重量']).sum()
-        geneList[i]['totalWeight'] = sum_weight
+        sum_weight = (gene_list[i]['data.frame']['重量']).sum()
+        gene_list[i]['totalWeight'] = sum_weight
     return(gene_list)
 
 #偏好的適應度方法(算式分母為偏好值1~偏好的最大值)
@@ -113,7 +116,7 @@ def fitness_preference(gene_list, require_goods, non_require_values, preference_
     #non_require_goods: 不必要性的商品清單
     #user_preference: 使用者對商品種類的偏好
     
-    max_preference = preferenceTable['preference'].max()
+    max_preference = preference_table['preference'].max()
     total_preference = 0
     for i in range(0, max_preference+1, 1):
         total_preference = total_preference+i**2
@@ -125,7 +128,7 @@ def fitness_preference(gene_list, require_goods, non_require_values, preference_
             reuslt = reuslt*temp_preferenced
             #temp.append(reuslt)
         
-        geneList[i]['fitPreference'] = reuslt
+        gene_list[i]['fitPreference'] = reuslt
         sum_preferenced = (gene_list[i]['data.frame']['Preference']).sum()
         geneList[i]['totalPreference'] = sum_preferenced
     return(gene_list)
@@ -135,7 +138,7 @@ def fitness_volume(gene_list, bin_volume):
     #gene_list: 被選擇出的基因清單
     #bin_volume: 箱子的乘積
     for i in range(len(gene_list)):
-        sum_volume = (geneList[i]['data.frame']['體積']).sum() #將最大限制體積減去每個基因的總體積
+        sum_volume = (gene_list[i]['data.frame']['體積']).sum() #將最大限制體積減去每個基因的總體積
         subtraction_volume = bin_volume-sum_volume #容積上限與選擇商品之總體積的差額
         reuslt = abs(subtraction_volume)/bin_volume #將體積適應度算出
         
@@ -145,7 +148,7 @@ def fitness_volume(gene_list, bin_volume):
             reuslt = reuslt + 2 #若適應度大於0就給予懲罰值2
         reuslt = reuslt + 3
         
-        geneList[i]['fitVolume'] = reuslt
+        gene_list[i]['fitVolume'] = reuslt
     return(gene_list)
 
 #價格的適應度方法(已加入懲罰值)
@@ -153,7 +156,7 @@ def fitness_price(gene_list, limit_price):
     #gene_list: 被選擇出的基因清單
     #limit_price: 價格最高限制
     for i in range(len(gene_list)):
-        sum_price = (geneList[i]['data.frame']['單價']).sum() #將最大限制金額減去每個基因的總金額
+        sum_price = (gene_list[i]['data.frame']['單價']).sum() #將最大限制金額減去每個基因的總金額
         subtraction_price = limit_price-sum_price #預算與商品組合之總價格的差額
         reuslt = abs(subtraction_price)/limit_price #將價格適應度算出
         
@@ -164,19 +167,19 @@ def fitness_price(gene_list, limit_price):
         else:
             reuslt = reuslt + 3
             
-        geneList[i]['fitPrice'] = reuslt
-        geneList[i]['totalPrice'] = sum_price
+        gene_list[i]['fitPrice'] = reuslt
+        gene_list[i]['totalPrice'] = sum_price
     return(gene_list)
 
 #總體的適應度方法
 def fitness_total(gene_list):
     #gene_list: 被選擇出的基因清單
     for i in range(len(gene_list)):
-        sum_fit = fitnessPriceAfter[i]['fitPrice']*fitnessPriceAfter[i]['fitVolume']*fitnessPriceAfter[i]['fitPreference']
-        geneList[i]['totalFit'] = sum_fit
+        sum_fit = gene_list[i]['fitPrice']*gene_list[i]['fitVolume']*gene_list[i]['fitPreference']
+        gene_list[i]['totalFit'] = sum_fit
     return(gene_list)
 
-#選擇(競賽法):
+#選擇(競賽法)-1:
 #從父母中隨機挑選出兩個染色體, 這兩染色體互相比較總適應度, 越低者獲勝, 將被複製至交配池中, 直至交配池內的數量與人口數相同
 def selection(gene_list, pop_amount):
     #gene_list: 被選擇出的基因清單
@@ -189,7 +192,27 @@ def selection(gene_list, pop_amount):
         elif compare_list[0]['totalFit'] > compare_list[1]['totalFit']:
             result.append(compare_list[1])
         else:
-            result.append(random.sample(compare_list, 1))
+            result.append(random.sample(compare_list, 1)[0])
+    return(result)
+
+#選擇(競賽法)-2:
+#從父母中隨機挑選出兩個染色體, 這兩染色體互相比較總適應度, 越低者獲勝, 將被複製至交配池中
+#直至交配池內的數量與剩餘人口數(人口數-除菁英數量)相同
+def selection_second(gene_list, pop_amount, elite_list):
+    #gene_list: 被選擇出的基因清單
+    #pop_amount: 人口數量
+    #elite_list: 菁英清單
+    result = []
+    for i in range(pop_amount-len(elite_list)):
+        compare_list = random.sample(gene_list, 2)
+        if compare_list[0]['totalFit'] < compare_list[1]['totalFit']:
+            result.append(compare_list[0])
+        elif compare_list[0]['totalFit'] > compare_list[1]['totalFit']:
+            result.append(compare_list[1])
+        else:
+            result.append(random.sample(compare_list, 1)[0])
+    for i in range(len(elite_list)):
+        result.append(elite_list[i])
     return(result)
 
 #交配(雙點交配)-需考慮適應函數值(包含懲罰值)、交配率和重量限制
@@ -261,7 +284,7 @@ def mutation_FN(good_data, gene_list, mutation_rate):
         mutation_index = int(mutation_data.index.values[0]) #取得該資料的index
         mutation_id = (mutation_data['產品代號']).tolist()[0] #取得該資料的產品代號
         if rnd_mutation_rate <= mutation_rate:
-            mutation_category = gene_list[0]['data.frame']['種類'][mutation_index] #取得染色體中要被突變的基因商品種類
+            mutation_category = gene_list[i]['data.frame']['種類'][mutation_index] #取得染色體中要被突變的基因商品種類
             temp_df = good_data[(good_data['種類']==mutation_category) & (good_data['產品代號']!=mutation_id)]
             temp_good = temp_df.sample(1) #從商品資料中隨機取得符合該基因突變的商品(不包含自己)
             gene_list[i]['data.frame'] = gene_list[i]['data.frame'].drop(gene_list[i]['data.frame'].index[mutation_index]) #將要突變的進行刪除
@@ -271,7 +294,50 @@ def mutation_FN(good_data, gene_list, mutation_rate):
             gene_list[i]['totalWeight'] = gene_list[i]['data.frame']['重量'].sum() #重新計算總重量
             gene_list[i]['chromosome'] = gene_list[i]['data.frame']['產品代號'].tolist() #重新將染色體編碼
     return(gene_list)
-        
+
+#氣泡排序法(遞增)
+def bubble_sort_flag(gene_list):
+    for i in range(len(gene_list)-1):
+        flag = False
+        for j in range(len(gene_list)-1-i):
+            if gene_list[j]['totalFit'] > gene_list[j+1]['totalFit']:
+                flag = True
+                tmp = gene_list[j]
+                gene_list[j] = gene_list[j+1]
+                gene_list[j+1] = tmp
+        if flag == False:
+            break
+    return(gene_list)
+
+#將符合體重的群組合併起來
+def merge_population(first_gene, second_gene, limit_weight):
+    new_pop = copy.deepcopy(first_gene) #將此代基因放入新的變數
+    for i in range(len(second_gene)):
+        new_pop.append(second_gene[i]) #將下代基因加入變數
+    condition_pop = []
+    for i in range(len(new_pop)):
+        if new_pop[i]['totalWeight']<=limit_weight:
+            condition_pop.append(new_pop[i])
+    result_list = bubble_sort_flag(condition_pop)
+    return(result_list)
+
+#將精英群挑選出來
+def elite_population(merge_list, elite_pop):
+    elite_list = merge_list[0:elite_pop]
+    return(elite_list)
+
+#新的下一代, 須刪除屬於菁英的染色體, 並且抓取符合群組數量
+def new_population(merge_list, elite_list, pop_amount):
+    new_pop_list = merge_list[len(elite_list):(pop_amount+len(elite_list))] #刪除掉已經是屬於菁英的染色體
+    return(new_pop_list)
+
+#更新菁英群組
+def new_elite_population(old_elite_list, now_elite_list, elite_pop):
+    for i in range(len(old_elite_list)):
+        now_elite_list.append(old_elite_list[i]) #將舊的菁英與新的菁英合併
+    now_elite_list = bubble_sort_flag(now_elite_list) #將菁英人口按照適應函數遞減排序
+    new_elite = now_elite_list[0:elite_pop] #取得elite_pop(菁英數量)的成員
+    return(new_elite)
 
 
 #----執行----
@@ -293,9 +359,7 @@ goodData = preference_match(good_data = goodData, preference_table = preferenceT
 #產生初始口(遵照popAmount數量)
 geneList = []
 for i in range(popAmount):
-    #geneList.append([])
     geneDict = {'data.frame': initial_pop(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, non_require_values = nonRequiredValues, limit_weight = maxWeight)}
-    #geneList[i].append(geneDict)
     geneList.append(geneDict)
     
 #編碼染色體
@@ -326,7 +390,73 @@ temp = copy.deepcopy(crossAfter)
 mutationAfter = mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate)
 
 #重新計算偏好適應函數, 體積適應函數, 價格適應函數
-#mutationAfter = fitness_preference(gene_list = copy.deepcopy(mutationAfter), require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
-#mutationAfter = fitness_volume(gene_list = copy.deepcopy(mutationAfter), bin_volume = maxVolume) 
-#mutationAfter = fitness_price(gene_list = copy.deepcopy(mutationAfter), limit_price = maxPrice)
-#mutationAfter = fitness_total(gene_list = copy.deepcopy(mutationAfter))
+mutationAfter = fitness_preference(gene_list = copy.deepcopy(mutationAfter), require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
+mutationAfter = fitness_volume(gene_list = copy.deepcopy(mutationAfter), bin_volume = maxVolume) 
+mutationAfter = fitness_price(gene_list = copy.deepcopy(mutationAfter), limit_price = maxPrice)
+mutationAfter = fitness_total(gene_list = copy.deepcopy(mutationAfter))
+
+#將父母代與孩子合併
+mergeList = merge_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, limit_weight = maxWeight)
+
+#此代的菁英群組
+latestElite = elite_population(merge_list = mergeList, elite_pop = eliteValues)
+
+#新的下一代
+newPopulation = new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
+
+gen_values_best = [] #紀錄最好的基因總體適應函數
+gen_values_loss = [] #紀錄最差的基因總體適應函數
+gen_price_best = []
+gen_preference_best = []
+  
+gen_values_best.append(latestElite[0]['totalFit'])
+gen_values_loss.append(newPopulation[popAmount-1]['totalFit']) #紀錄最差的總體適應函數
+gen_price_best.append(latestElite[0]['totalPrice']) #紀錄最佳的總價格
+gen_preference_best.append(latestElite[0]['totalPreference']) #紀錄最佳的總偏好
+print(("============第 {0} 代============").format(1))
+
+for i in range(1, maxGen):
+    #選擇
+    selectionAfter = selection_second(gene_list = newPopulation, pop_amount = popAmount, elite_list = latestElite)
+    
+    #交配
+    crossAfter = cross_over(good_data = goodData, gene_list = selectionAfter, require_goods = requiredList, non_require_values = nonRequiredValues, cross_rate = crossRate)
+    
+    #突變
+    mutationAfter = mutation_FN(good_data = goodData, gene_list = crossAfter, mutation_rate = mutationRate)
+    
+    #重新計算偏好適應函數, 體積適應函數, 價格適應函數
+    mutationAfter = fitness_preference(gene_list = mutationAfter, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)
+    mutationAfter = fitness_volume(gene_list = mutationAfter, bin_volume = maxVolume) 
+    mutationAfter = fitness_price(gene_list = mutationAfter, limit_price = maxPrice)
+    mutationAfter = fitness_total(gene_list = mutationAfter)
+    
+    #將父母代與孩子合併
+    mergeList = merge_population(first_gene = newPopulation, second_gene = mutationAfter, limit_weight = maxWeight)
+    
+    #此代的菁英群組
+    nowEliteLiet = elite_population(merge_list = mergeList, elite_pop = eliteValues)
+    
+    #更新舊代的菁英群組
+    latestElite = new_elite_population(old_elite_list = latestElite, now_elite_list = nowEliteLiet, elite_pop = eliteValues)
+    
+    #下一代基因
+    newPopulation = new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
+    
+    gen_values_best.append(latestElite[0]['totalFit'])
+    gen_values_loss.append(newPopulation[popAmount-1]['totalFit']) #紀錄最差的總體適應函數
+    gen_price_best.append(latestElite[0]['totalPrice']) #紀錄最佳的總價格
+    gen_preference_best.append(latestElite[0]['totalPreference']) #紀錄最佳的總偏好
+    print(("============第 {0} 代============").format(i+1))
+
+resultTime = time.time()-startTime
+print('花費時間: {0} {1}'.format(resultTime, '秒'))
+
+plt.rcParams['font.sans-serif'] = ['Microsoft JhengHei'] 
+plt.rcParams['axes.unicode_minus'] = False
+plt.style.use('bmh')
+plt.plot(gen_values_best, '-') #畫圖來顯示總體適應函數的起伏
+plt.title('裝箱演算法')
+plt.xlabel("世代數")
+plt.ylabel("總體適應值")
+
