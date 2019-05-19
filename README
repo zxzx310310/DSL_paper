@@ -1,6 +1,29 @@
 裝箱問題之檔案
 
 DSL_paper
+ ├ C
+ │ ├ BBP_GA.c    //GA的C語言檔案
+ │ ├ goodArray.txt   //C專用txt讀取檔案
+ │ ├ readtext.c   //雛型檔-鈞哥
+ │ └ 執行指令.txt   //執行指令檔
+ ├ assets
+ │ ├ StoreData.csv
+ │ ├ StoreData.txt
+ │ ├ bundlingTable.csv
+ │ ├ categoryTable.csv //種類ID對照表
+ │ ├ columnNameTable.csv //欄位ID對照表
+ │ ├ goodArray.csv
+ │ ├ itemIDTable.csv //品項ID對照表
+ │ ├ itemId.csv
+ │ ├ org_StoreData.csv
+ │ ├ preferenceTable.csv
+ │ ├ 商品資料庫.csv
+ │ ├ 商品資料庫_111.csv
+ │ ├ 商品資料庫_222.csv
+ │ ├ 商品資料庫_333.csv
+ │ ├ 商品資料庫_444.csv
+ │ ├ 商品資料庫_555.csv
+ │ └ 商品資料庫_666.csv
  ├ assets
  │   ├ old    //舊資料集
  │   │  ├ StoreData.csv
@@ -29,4 +52,4 @@ DSL_paper
  ├ conference.R
  └ rBinPackingProblem.r
 
-By 2018/11/07 Jacky Bear
+By 2019/05/19 Jacky Chen
