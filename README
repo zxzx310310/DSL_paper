@@ -50,6 +50,9 @@ DSL_paper
  ├ MOGA_BBP_v5_for_loop.R    //針對MOGA_BBP_v5.R之迴圈測試檔案
  ├ README
  ├ conference.R
+ ├ numba_Test_GA.py
+ ├ numba_gpu.py 
+ ├ numpy_GA.py //新增numpy版本的GA
  └ rBinPackingProblem.r
 
 By 2019/05/19 Jacky Chen
