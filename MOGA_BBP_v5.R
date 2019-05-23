@@ -19,21 +19,16 @@ popAmount <- 20 #人口數量
 crossRate <- 1 #交配率
 mutationRate <- 0.01 #突變率
 eliteValues <- round(popAmount*0.1) #菁英數量
-maxGen <- 50 #世代次數
+maxGen <- 100 #世代次數
 
 #----使用者需輸入的參數(假設)----
 dietHabit <- "葷食" #葷食與素食的選擇
 userItemValues <- 22 #使用者需要的數量
-#userPrice <- "1300-1599" #使用者金額(區間)
 maxPrice <- 1500 #使用者金額
-#maxPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[2]) #進行文字切割, 並取第一個文字
-#minPrice <- as.integer(unlist(strsplit(as.character(userPrice),split="-",fixed=T))[1]) #進行文字切割, 並取第一個文字
 #exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
 #exceptBrandList <- '大同' #將要剔除的品牌
-
 #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
-#userPreference <- c(sample(1, length(requiredList), replace = TRUE), sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE))
-#preferenceDF <- data.frame(種類 = c(requiredList, nonRequiredList), 喜好 = userPreference)
+
 
 #----Function----
 #偏好值與類別合併:
@@ -43,9 +38,6 @@ preference_match <- function(good_data, preference_table) {
   #require_goods: 必要性的商品清單
   #non_require_goods: 不必要性的商品清單
   #user_preference: 使用者對商品種類的偏好
-  
-  # total_list <- as.character(c(require_goods, non_require_goods)) #將必需性商品與選擇性商品類別合併
-  # good_preference <- data.frame(category = total_list, preference = c(sample(1, length(require_goods), replace = TRUE), user_preference)) #將商品類別和偏好值合併為DF型態
   
   for (i in 1:dim(preference_table)[1]) {
     # good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])^2
@@ -398,24 +390,44 @@ mutation_FN <- function(good_data, gene_list, mutation_rate, require_goods, non_
   return(gene_list)
 }
 
-
-#將符合體重的群組合併起來
-merge_population <- function(first_gene, second_gene, limit_weight) {
+#將符合體重的群組合併起來(包含菁英)
+merge_population <- function(first_gene, second_gene, elite_pop, limit_weight) {
   new_pop <- list()
-  new_pop <- first_gene #將此代基因放入新的變數
-  new_pop <- append(new_pop, second_gene) #將下代基因加入變數
+  new_pop <- first_gene #將此代染色體放入新的變數
+  new_pop <- append(new_pop, second_gene) #將下代染色體加入變數
   condition_pop <- list() 
   for (i in 1:length(new_pop)) {
     if(new_pop[[i]]$totalWeight <= limit_weight){
       condition_pop <- append(condition_pop, new_pop[i]) #將未超過限制重量的染色體放入新的群組
     }
   }
+  if(length(elite_pop)!=0){
+    new_pop <- append(new_pop, elite_pop) #將菁英染色體加入變數
+  }
   condition_pop <- condition_pop[order(sapply(condition_pop, function(x) x$totalFit), decreasing=FALSE)] #將人口按照適應函數遞減排序
   return(condition_pop)
 }
 
 
-#將精英群挑選出來
+
+
+# #將符合體重的群組合併起來
+# merge_population <- function(first_gene, second_gene, limit_weight) {
+#   new_pop <- list()
+#   new_pop <- first_gene #將此代基因放入新的變數
+#   new_pop <- append(new_pop, second_gene) #將下代基因加入變數
+#   condition_pop <- list() 
+#   for (i in 1:length(new_pop)) {
+#     if(new_pop[[i]]$totalWeight <= limit_weight){
+#       condition_pop <- append(condition_pop, new_pop[i]) #將未超過限制重量的染色體放入新的群組
+#     }
+#   }
+#   condition_pop <- condition_pop[order(sapply(condition_pop, function(x) x$totalFit), decreasing=FALSE)] #將人口按照適應函數遞減排序
+#   return(condition_pop)
+# }
+
+
+#將精英群複製出來
 elite_population <- function(merge_list, elite_pop) {
   elite_list <- list()
   elite_list <- head(merge_list[order(sapply(merge_list, function(x) x$totalFit), decreasing=FALSE)], elite_pop) #取得population(人口數量)的族群
@@ -423,17 +435,24 @@ elite_population <- function(merge_list, elite_pop) {
 }
 
 
-#新的下一代, 須刪除屬於菁英的染色體, 並且抓取符合群組數量
-new_population <- function(merge_list, elite_list, pop_amount) {
-  elite_index <- which(merge_list %in% elite_list) #取得合併的染色體與菁英群組染色體, 一樣的index在哪
-  if(length(elite_index)!=0){
-    new_pop_list <- merge_list[-elite_index] #刪除掉已經是屬於菁英的染色體
-    new_pop_list <- head(new_pop_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
-  } else {
-    new_pop_list <- head(merge_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
-  }
+#新的下一代, 抓取符合群組數量
+new_population <- function(merge_list, pop_amount) {
+  new_pop_list <- head(merge_list, pop_amount) #取得符合群組數量的染色體數
   return(new_pop_list)
 }
+
+
+# #新的下一代, 須刪除屬於菁英的染色體, 並且抓取符合群組數量
+# new_population <- function(merge_list, elite_list, pop_amount) {
+#   elite_index <- which(merge_list %in% elite_list) #取得合併的染色體與菁英群組染色體, 一樣的index在哪
+#   if(length(elite_index)!=0){
+#     new_pop_list <- merge_list[-elite_index] #刪除掉已經是屬於菁英的染色體
+#     new_pop_list <- head(new_pop_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
+#   } else {
+#     new_pop_list <- head(merge_list, pop_amount) #在剩下的染色體中, 取得符合群組數量的染色體數
+#   }
+#   return(new_pop_list)
+# }
 
 #更新菁英群組
 new_elite_population <- function(old_elite_list, now_elite_list, elite_pop) {
@@ -486,9 +505,8 @@ requiredList <- level[order(nchar(level), level)][1:6]
 nonRequiredList <- level[order(nchar(level), level)][-1:-length(requiredList)]
 nonRequiredValues <-  userItemValues-length(requiredList) #選擇性商品的數量
 #nonRequiredValues <- length(nonRequiredList) #選擇性商品的數量
-#userPreference <- sample(c(1:length(nonRequiredList)), length(nonRequiredList), replace = FALSE) #隨機產生商品偏好
 
-#goodData <- preference_match(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, user_preference = userPreference)
+
 goodData <- preference_match(good_data = goodData, preference_table = preferenceTable)
 
 #剔除掉不想要的品牌
@@ -546,17 +564,17 @@ mutationAfter <- fitness_total(gene_list = mutationAfter)
 
 #將父母代與孩子合併
 mergeList <- list()
-mergeList <- merge_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, limit_weight = maxWeight)
+latestElite <- list()
+mergeList <- merge_population(first_gene = fitnessTotalAfter, second_gene = mutationAfter, elite_pop = latestElite,limit_weight = maxWeight)
 
 
 #此代的菁英群組
-latestElite <- list()
 latestElite <- elite_population(merge_list = mergeList, elite_pop = eliteValues)
 
 
 #新的下一代
 newPopulation <- list()
-newPopulation <- new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
+newPopulation <- new_population(merge_list = mergeList, pop_amount = popAmount)
 
 
 gen_values_best <- vector() #紀錄最好的基因總體適應函數
@@ -572,12 +590,12 @@ print(paste("============第", 1, "代============"))
 
 for (i in 2:maxGen) {
   #選擇(2)
-  selectionAfter <- list()
-  selectionAfter <- selection_second(gene_list = newPopulation, pop_amount = popAmount, elite_list = latestElite)
-  
-  #選擇(3)
   # selectionAfter <- list()
-  # selectionAfter <- selection_third(gene_list = selectionAfter, pop_amount = popAmount, elite_list = latestElite)
+  # selectionAfter <- selection_second(gene_list = newPopulation, pop_amount = popAmount, elite_list = latestElite)
+  
+  #選擇(1)
+  selectionAfter <- list()
+  selectionAfter <- selection_first(gene_list = fitnessTotalAfter, pop_amount = popAmount)
   
   #交配
   crossAfter <- list()
@@ -595,7 +613,7 @@ for (i in 2:maxGen) {
   
   #將父母代與孩子合併
   mergeList <- list()
-  mergeList <- merge_population(first_gene = newPopulation, second_gene = mutationAfter, limit_weight = maxWeight)
+  mergeList <- merge_population(first_gene = newPopulation, second_gene = mutationAfter, elite_pop = latestElite, limit_weight = maxWeight)
   
   #此代的菁英群組
   nowEliteLiet <- list()
@@ -605,7 +623,7 @@ for (i in 2:maxGen) {
   latestElite <- new_elite_population(old_elite_list = latestElite, now_elite_list = nowEliteLiet, elite_pop = eliteValues)
   
   #下一代基因
-  newPopulation <- new_population(merge_list = mergeList, elite_list = latestElite, pop_amount = popAmount)
+  newPopulation <- new_population(merge_list = mergeList, pop_amount = popAmount)
   
   gen_values_best[i] <- latestElite[[1]]$totalFit #紀錄最佳的總體適應函數
   gen_values_loss[i] <- tail(newPopulation, 1)[[1]]$totalFit #紀錄最差的總體適應函數
