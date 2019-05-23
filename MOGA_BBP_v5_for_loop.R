@@ -23,7 +23,7 @@ for (loop in 1:10) {
   maxWeight <- 16000 #最大重量(g)
   popAmount <- 20 #人口數量
   crossRate <- 1 #交配率
-  mutationRate <- 0.01 #突變率
+  mutationRate <- 1 #突變率
   eliteValues <- round(popAmount*0.1) #菁英數量
   maxGen <- 5000 #世代次數
   
@@ -385,7 +385,7 @@ for (loop in 1:10) {
           gene_list[[i]]$'chromosome'[mutation_index] <- as.character(temp_good$'產品代號') #更改編碼基因代號
           gene_list[[i]]$'totalWeight' <- sum(gene_list[[i]][[1]]$'重量') #更新並計算總重量
         } else {
-          temp_df <- good_data_non_require[good_data_non_require$'產品代號'!=gene_list[[i]][[1]][mutation_index,]$'產品代號',] #建立選擇性商品資料(不包含自己)
+          temp_df <- good_data_non_require[good_data_non_require$'種類'==mutation_category & good_data_non_require$'產品代號'!=gene_list[[i]][[1]][mutation_index,]$'產品代號',] #建立選擇性商品資料(不包含自己)
           temp_good <- temp_df[sample(nrow(temp_df), 1), ] #從選擇性商品資料中隨機取得符合該基因突變的商品(不包含自己)
           gene_list[[i]][[1]][mutation_index,] <-  temp_good #將商品進行變異
           gene_list[[i]]$'chromosome'[mutation_index] <- as.character(temp_good$'產品代號') #更改編碼基因代號
