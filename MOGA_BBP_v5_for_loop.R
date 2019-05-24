@@ -33,7 +33,7 @@ for (loop in 1:10) {
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
   userItemValues <- 10 #使用者需要的數量
-  maxPrice <- 500 #使用者金額
+  maxPrice <- 550 #使用者金額
   #exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
   #exceptBrandList <- '大同' #將要剔除的品牌
   #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
@@ -217,7 +217,7 @@ for (loop in 1:10) {
   fitness_total <- function(gene_list) {
     #gene_list: 被選擇出的基因清單
     
-    sum_fit <- unlist(lapply(fitnessPriceAfter, function(x) x$fitVolume*x$fitPrice))
+    sum_fit <- unlist(lapply(gene_list, function(x) x$fitVolume*x$fitPrice))
     
     for (i in 1:length(gene_list)) {
       sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'

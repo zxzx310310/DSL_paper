@@ -211,7 +211,7 @@ fitness_price <- function(gene_list, limit_price) {
 fitness_total <- function(gene_list) {
   #gene_list: 被選擇出的基因清單
   
-  sum_fit <- unlist(lapply(fitnessPriceAfter, function(x) x$fitVolume*x$fitPrice))
+  sum_fit <- unlist(lapply(gene_list, function(x) x$fitVolume*x$fitPrice))
   
   for (i in 1:length(gene_list)) {
     sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
