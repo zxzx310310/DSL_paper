@@ -73,6 +73,7 @@ fitness_volume <- function(gene_list, bin_volume) {
     subtraction_volume <- bin_volume-sum_volume #容積上限與選擇商品之總體積的差額
     reuslt <- abs(subtraction_volume)/bin_volume #將體積適應度算出
     
+    
     if (sum_volume >=(bin_volume*0.6) & sum_volume <=bin_volume) {
       if (subtraction_volume==0) {
         reuslt <- reuslt + 1 #若適應度等於0就給予懲罰值1, e.g. (49795.2-27749.25)/49795.2=0.4427324, 愈接近0表示價格差距越小
@@ -84,6 +85,8 @@ fitness_volume <- function(gene_list, bin_volume) {
     }
     gene_list[[i]]["fitVolume"] <- reuslt 
     gene_list[[i]]["totalVolume"] <- sum_volume 
+    volume_rate <- sum_volume / maxVolume
+    gene_list[[i]]["volumeRate"] <- volume_rate 
   }
   return(gene_list)
 }
