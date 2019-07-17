@@ -4,14 +4,16 @@ preference <- vector()
 volumeRate <- vector()
 timeStamp <- vector()
 for (loop in 1:10) {
+  tempDF <- data.frame(總適應函數 = numeric())
   #----時間紀錄(開始)----
   startTime <- Sys.time()
   
   #----資料初始化(本地端)----
-  # sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
-  sourceData <- read.csv(file = "assets/商品資料庫_s.csv") #讀取原始資料
+  sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
   # preferenceTable <- read.csv(file = "assets/preferenceTable.csv") #讀取商品偏好表
-  preferenceTable <- read.csv(file = "assets/preferenceTable_s.csv") #讀取商品偏好表
+  # sourceData <- read.csv(file = "assets/商品資料庫_s.csv") #讀取原始資料
+  # preferenceTable <- read.csv(file = "assets/preferenceTable_s.csv") #讀取商品偏好表
+  preferenceTable <- read.csv(file = "assets/preferenceTable2.csv") #讀取商品偏好表
   sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
   names(sourceData)[11] <- "重量" #重新命名欄位名稱
   #categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
@@ -21,21 +23,21 @@ for (loop in 1:10) {
   goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
   
   #----環境參數設定----
-  # maxVolume <- 47*32*39 #最大箱子體積
-  maxVolume <- 13000 #最大箱子體積
+  maxVolume <- 47*32*39 #最大箱子體積
+  # maxVolume <- 13000 #最大箱子體積
   maxWeight <- 16000 #最大重量(g)
   popAmount <- 30 #人口數量
   crossRate <- 1 #交配率
   mutationRate <- 0.01 #突變率
   eliteValues <- round(popAmount*0.1) #菁英數量
-  maxGen <- 10000 #世代次數
+  maxGen <- 5000 #世代次數
   
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
-  userItemValues <- 10 #使用者需要的數量
-  maxPrice <- 550 #使用者金額
+  userItemValues <- 16 #使用者需要的數量
+  maxPrice <- 1500 #使用者金額
   #exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
-  #exceptBrandList <- '大同' #將要剔除的品牌
+  # exceptBrandList <- '大同' #將要剔除的品牌
   #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
   
   
@@ -151,6 +153,7 @@ for (loop in 1:10) {
     #user_preference: 使用者對商品種類的偏好
     
     max_preference <- max(preference_table$preference)
+    # max_preference <- max(preference_table$preference[preference_table$preference!=max_preference])
     for(i in 1:length(gene_list)) {
       reuslt <- 1
       for (k in 1:sum(length(require_goods), non_require_values)) {
@@ -178,10 +181,13 @@ for (loop in 1:10) {
       if (sum_volume >=(bin_volume*0.6) & sum_volume <=bin_volume) {
         if (subtraction_volume==0) {
           reuslt <- reuslt + 1 #若適應度等於0就給予懲罰值1, e.g. (49795.2-27749.25)/49795.2=0.4427324, 愈接近0表示價格差距越小
+          # reuslt <- reuslt + 1*1
         } else {
+          # reuslt <- reuslt + 2*10
           reuslt <- reuslt + 2 #若適應度大於0就給予懲罰值2
         } 
       } else {
+        # reuslt <- reuslt + 3*100
         reuslt <- reuslt + 3 #剩下結果將給予懲罰值3
       }
       gene_list[[i]]["fitVolume"] <- reuslt 
@@ -202,10 +208,13 @@ for (loop in 1:10) {
       reuslt <- abs(subtraction_price)/limit_price #將價格適應度算出
       if (subtraction_price==0) {
         reuslt <- reuslt + 1
+        # reuslt <- reuslt + 1*1
       } else if(subtraction_price>0){
         reuslt <- reuslt + 2
+        # reuslt <- reuslt + 2*10
       } else {
         reuslt <- reuslt + 3
+        # reuslt <- reuslt + 3*100
       }
       gene_list[[i]]["fitPrice"] <- reuslt
       gene_list[[i]]["totalPrice"] <- sum_price
@@ -221,6 +230,7 @@ for (loop in 1:10) {
     
     for (i in 1:length(gene_list)) {
       sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
+      # sum_fit <- (gene_list[[i]]$'fitVolume'*0.1) * (gene_list[[i]]$'fitPrice'*0.8) * (gene_list[[i]]$'fitPreference'*0.1)
       gene_list[[i]]["totalFit"] <- sum_fit
     }
     return(gene_list)
@@ -520,7 +530,7 @@ for (loop in 1:10) {
   goodData <- preference_match(good_data = goodData, preference_table = preferenceTable)
   
   #剔除掉不想要的品牌
-  #goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
+  # goodData <- except_brand(good_data = goodData, except_brand_list = exceptBrandList)
   
   
   ##基因演算法開始
@@ -640,6 +650,7 @@ for (loop in 1:10) {
     gen_price_best[i] <- latestElite[[1]]$totalPrice #紀錄最佳的總價格
     gen_preference_best[i] <- latestElite[[1]]$totalPreference #紀錄最佳的總偏好
     print(paste("============第", i, "代============"))
+    tempDF <- rbind(tempDF, latestElite[[1]]$totalFit)
   } 
   
   plot(gen_values_best, main = paste("裝箱演算法-第", loop, "次"), xlab = "世代次數", ylab = "總體適應函數") #畫圖來顯示總體適應函數的起伏
@@ -664,6 +675,8 @@ for (loop in 1:10) {
   preference[loop] <- sum(newPopulation[[1]][[1]]$Preference)
   volumeRate[loop] <- sum(newPopulation[[1]][[1]]$'體積')/(maxVolume)
   timeStamp[loop] <- resultTime
+  write.csv(tempDF, file = paste("plot_values_", loop, ".csv", sep = ""), row.names = FALSE)
+
 }
 
 tempDF <- data.frame(總適應函數 = totalFitness, 總價格 = price, 偏好值 = preference, 體積率 = volumeRate, 執行時間 = timeStamp)
