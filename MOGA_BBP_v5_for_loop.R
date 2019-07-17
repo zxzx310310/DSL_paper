@@ -8,10 +8,10 @@ for (loop in 1:10) {
   startTime <- Sys.time()
   
   #----資料初始化(本地端)----
-  # sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
-  sourceData <- read.csv(file = "assets/商品資料庫_s.csv") #讀取原始資料
-  # preferenceTable <- read.csv(file = "assets/preferenceTable.csv") #讀取商品偏好表
-  preferenceTable <- read.csv(file = "assets/preferenceTable_s.csv") #讀取商品偏好表
+  sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
+  # sourceData <- read.csv(file = "assets/商品資料庫_s.csv") #讀取原始資料
+  preferenceTable <- read.csv(file = "assets/preferenceTable.csv") #讀取商品偏好表
+  # preferenceTable <- read.csv(file = "assets/preferenceTable_s.csv") #讀取商品偏好表
   sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
   names(sourceData)[11] <- "重量" #重新命名欄位名稱
   #categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
@@ -21,21 +21,21 @@ for (loop in 1:10) {
   goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
   
   #----環境參數設定----
-  # maxVolume <- 47*32*39 #最大箱子體積
-  maxVolume <- 13000 #最大箱子體積
+  maxVolume <- 47*32*39 #最大箱子體積
+  # maxVolume <- 13000 #最大箱子體積
   maxWeight <- 16000 #最大重量(g)
   popAmount <- 30 #人口數量
   crossRate <- 1 #交配率
   mutationRate <- 0.01 #突變率
   eliteValues <- round(popAmount*0.1) #菁英數量
-  maxGen <- 10000 #世代次數
+  maxGen <- 5000 #世代次數
   
   #----使用者需輸入的參數(假設)----
   dietHabit <- "葷食" #葷食與素食的選擇
-  userItemValues <- 10 #使用者需要的數量
-  maxPrice <- 550 #使用者金額
+  userItemValues <- 18 #使用者需要的數量
+  maxPrice <- 1500 #使用者金額
   #exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
-  #exceptBrandList <- '大同' #將要剔除的品牌
+  exceptBrandList <- '大同' #將要剔除的品牌
   #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
   
   
@@ -149,8 +149,10 @@ for (loop in 1:10) {
     #require_goods: 必要性的商品清單
     #non_require_goods: 不必要性的商品清單
     #user_preference: 使用者對商品種類的偏好
+    n <- which(preference_table$preference!=100)
+    preference_list <- preference_table$preference[n]
     
-    max_preference <- max(preference_table$preference)
+    max_preference <- max(preference_list)
     for(i in 1:length(gene_list)) {
       reuslt <- 1
       for (k in 1:sum(length(require_goods), non_require_values)) {
