@@ -265,10 +265,16 @@ for (loop in 1:10) {
   }
   
   #將符合體重的群組合併起來(包含菁英)
-  merge_population <- function(first_gene, second_gene) {
-    condition_pop <- list()
-    condition_pop <- first_gene #將此代染色體放入新的變數
-    condition_pop <- append(condition_pop, second_gene) #將下代染色體加入變數
+  merge_population <- function(first_gene, second_gene, limit_volume) {
+    new_pop <- list()
+    new_pop <- first_gene #將此代染色體放入新的變數
+    new_pop <- append(new_pop, second_gene) #將下代染色體加入變數
+    condition_pop <- list() 
+    for (i in 1:length(new_pop)) {
+      if(new_pop[[i]]$'totalVolume' <= limit_volume){
+        condition_pop <- append(condition_pop, new_pop[i]) #將未超過限制重量的染色體放入新的群組
+      }
+    }
     condition_pop <- condition_pop[order(sapply(condition_pop, function(x) x$totalFit), decreasing=FALSE)] #將人口按照適應函數遞減排序
     return(condition_pop)
   }
@@ -359,7 +365,7 @@ for (loop in 1:10) {
   
   #將父母代與孩子合併
   mergeList <- list()
-  mergeList <- merge_population(first_gene = crossAfter, second_gene = mutationAfter)
+  mergeList <- merge_population(first_gene = crossAfter, second_gene = mutationAfter, limit_volume = maxVolume)
   
   #此代的菁英群組
   latestElite <- elite_population(merge_list = mergeList, elite_pop = eliteValues)
@@ -406,7 +412,7 @@ for (loop in 1:10) {
     
     #將交配後的孩子與突變後的孩子合併
     mergeList <- list()
-    mergeList <- merge_population(first_gene = crossAfter, second_gene = mutationAfter)
+    mergeList <- merge_population(first_gene = crossAfter, second_gene = mutationAfter, limit_volume = maxVolume)
     
     #此代的菁英群組
     nowEliteLiet <- list()
