@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 import copy
 import os
-os.chdir('E:/R.data/DSL_paper')
+os.chdir('D:/R.data/DSL_paper')
 
 #----時間紀錄(開始)----
 startTime = time.time()
@@ -443,7 +443,7 @@ gen_values_best.append(latestElite[0]['totalFit'])
 gen_values_loss.append(newPopulation[popAmount-1]['totalFit']) #紀錄最差的總體適應函數
 gen_price_best.append(latestElite[0]['totalPrice']) #紀錄最佳的總價格
 gen_preference_best.append(latestElite[0]['totalPreference']) #紀錄最佳的總偏好
-print(("============第 {0} 代============").format(1))
+#print(("============第 {0} 代============").format(1))
 
 for i in range(1, maxGen):
     #選擇
@@ -477,7 +477,7 @@ for i in range(1, maxGen):
     gen_values_loss.append(newPopulation[popAmount-1]['totalFit'][0]) #紀錄最差的總體適應函數
     gen_price_best.append(latestElite[0]['totalPrice'][0]) #紀錄最佳的總價格
     gen_preference_best.append(latestElite[0]['totalPreference'][0]) #紀錄最佳的總偏好
-    print(("============第 {0} 代============").format(i+1))
+#    print(("============第 {0} 代============").format(i+1))
 
 resultTime = time.time()-startTime
 print('花費時間: {0} {1}'.format(resultTime, '秒'))

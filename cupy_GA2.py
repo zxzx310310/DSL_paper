@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 import copy
 import os
-os.chdir('E:/R.data/DSL_paper') #設定路徑
+os.chdir('D:/R.data/DSL_paper') #設定路徑
 
 #----時間紀錄(開始)----
 startTime = time.time()
@@ -82,31 +82,72 @@ def initial_pop(good_data, require_goods, non_require_goods, non_require_values,
     #non_require_values: 不必要性的商品數量
     #limit_weight: 最大重量限制
     while True:   
-        temp_good = cp.copy(good_data) #先將原始資料暫時給另外一個變數使用    
+        temp_good = copy.copy(good_data) #先將原始資料暫時給另外一個變數使用    
         for i in range(len(require_goods)):
-            get_index = temp_good[(temp_good[:,8] == require_goods[i]) & (temp_good[:, 11] !=1)] #取得符合條件的資料
+            get_index = temp_good[(temp_good[:,6] == require_goods[i]) & (temp_good[:, 8] !=1)] #取得符合條件的資料
             temp_index = random.randint(0, (len(get_index)-1)) #隨機取得品項
             get_index = get_index[temp_index] #取得商品名稱
-            get_index[11] = 1
+            get_index[8] = 1
             temp_good[temp_good[:,0] == get_index[0]] = get_index
     
         selected_require = np.random.choice(non_require_goods, non_require_values, replace=False)
         
         for i in range(len(selected_require)):
-            get_index = temp_good[(temp_good[:,8] == selected_require[i]) & (temp_good[:, 11] !=1)] #取得符合條件的資料
+            get_index = temp_good[(temp_good[:,6] == selected_require[i]) & (temp_good[:, 8] !=1)] #取得符合條件的資料
             temp_index = random.randint(0, (len(get_index)-1)) #隨機取得品項
             get_index = get_index[temp_index] #取得商品名稱
-            get_index[11] = 1
+            get_index[8] = 1
             temp_good[temp_good[:,0] == get_index[0]] = get_index
 
-        selected_good = temp_good[temp_good[:, 11] == 1]
-        sum_weight = np.sum(selected_good[:,10])
+        selected_good = temp_good[temp_good[:, 8] == 1]
+        sum_weight = np.sum(selected_good[:,7])
         if sum_weight <= limit_weight:
             break
     return(selected_good) #回傳結果
 
-
+#編碼染色體:
+#必要性商品必定方在最前段, 選擇性商品必定放在後段
+def create_chromosome(gene_list):
+    #gene_list: 被選擇出的基因清單
+    for i in range(len(gene_list)):
+        chromosome = (gene_list[i]['data.frame'][:,0])     
+        gene_list[i]['chromosome'] = chromosome
+    return(gene_list)
     
+#計算總重量
+def total_weight(gene_list):
+    #gene_list: 被選擇出的基因清單
+    for i in range(len(gene_list)):
+        sum_weight = cp.sum(gene_list[i]['data.frame'][:,8])
+        gene_list[i]['totalWeight'] = cp.array([sum_weight])
+    return(gene_list)
+    
+#偏好的適應度方法(算式分母為偏好值1~偏好的最大值)
+def fitness_preference(gene_list, require_goods, non_require_values, preference_table):
+    #gene_list: 被選擇出的基因清單
+    #require_goods: 必要性的商品清單
+    #non_require_goods: 不必要性的商品清單
+    #user_preference: 使用者對商品種類的偏好
+    
+    max_preference = np.max(preference_table[:,1])
+    total_preference = 0
+    for i in range(0, max_preference+1, 1):
+        total_preference = total_preference + i**2
+    
+    for i in range(len(gene_list)):
+        reuslt = 1
+        for j in range((len(require_goods) + non_require_values)):
+            temp_preferenced = 1+(((gene_list[i]['data.frame'][:,9][j]**2)-1) / total_preference)
+            reuslt *=temp_preferenced
+            #temp.append(reuslt)
+        
+        gene_list[i]['fitPreference'] = reuslt
+        sum_preferenced = (gene_list[i]['data.frame'][:,9]).sum()
+        gene_list[i]['totalPreference'] = sum_preferenced
+    return(gene_list)
+
+
+
 #----執行----
 goodData = diet_select(good_data = goodData, diet_habit_list = dietHabit) #葷素的方法
 goodData = except_brand(good_data = goodData, except_brand_list = exceptBrandList) #剔除掉不想要的品牌
@@ -118,13 +159,21 @@ nonRequiredValues = userItemValues-len(requiredList) #選擇性商品的數量
 
 goodData = preference_match(good_data = goodData, preference_table = preferenceTable) #必要性商品種類
 goodData.drop(['廠牌', '葷素'], axis = 1, inplace=True) #移除不必要的資料欄位
-#goodData = goodData.values #轉換成ndarry型態
+goodData = goodData.values #轉換成ndarry型態
+preferenceTable = preferenceTable .values
 
 ##基因演算法開始
 #產生初始口(遵照popAmount數量)
-#geneList = []
-#for i in range(popAmount):
-#    geneDict = {'data.frame': initial_pop(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, non_require_values = nonRequiredValues, limit_weight = maxWeight)}
-#    geneList.append(geneDict)
+geneList = []
+for i in range(popAmount):
+    geneDict = {'data.frame': initial_pop(good_data = goodData, require_goods = requiredList, non_require_goods = nonRequiredList, non_require_values = nonRequiredValues, limit_weight = maxWeight)}
+    geneList.append(geneDict)
 
+#編碼染色體
+geneList = create_chromosome(gene_list = geneList)
 
+#計算每個基因總重量
+geneList = total_weight(gene_list = geneList)
+
+#計算偏好適應度(目前僅計算總偏好值)
+fitnessPreference = fitness_preference(gene_list = geneList, require_goods = requiredList, non_require_values =  nonRequiredValues, preference_table = preferenceTable)

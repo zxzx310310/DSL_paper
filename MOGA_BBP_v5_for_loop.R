@@ -1,22 +1,20 @@
-totalFitness <- vector()
-price <- vector()
-preference <- vector()
-volumeRate <- vector()
-timeStamp <- vector()
+totalFitness <- vector() #紀錄總體適應函數
+price <- vector() #紀錄價格
+preference <- vector() #紀錄商品種類偏好
+volumeRate <- vector() #紀錄體積率
+timeStamp <- vector() #紀錄程式執行時間
 for (loop in 1:10) {
-  tempDF <- data.frame(總適應函數 = numeric())
+  tempDF <- data.frame(總適應函數 = numeric()) #建立空的data frame型態變數
   #----時間紀錄(開始)----
   startTime <- Sys.time()
   
   #----資料初始化(本地端)----
   sourceData <- read.csv(file = "assets/商品資料庫.csv") #讀取原始資料
-  # sourceData <- read.csv(file = "assets/商品資料庫_s.csv") #讀取原始資料
+  # sourceData <- read.csv(file = "assets/商品資料庫_s.csv") #讀取小型資料
   preferenceTable <- read.csv(file = "assets/preferenceTable.csv") #讀取商品偏好表
-  # preferenceTable <- read.csv(file = "assets/preferenceTable_s.csv") #讀取商品偏好表
+  # preferenceTable <- read.csv(file = "assets/preferenceTable_s.csv") #讀取小型資料的商品偏好表
   sourceData <- sourceData[c(-1, -13)] #移除不必要的資料欄位
   names(sourceData)[11] <- "重量" #重新命名欄位名稱
-  #categoryDF <- data.frame(代號 = c("A1", "B1", "C1", "D1", "E1", "F1", "G1", "G2", "H1", "I1", "I2", "I3", "I4", "I5", "J1", "J2", "K1", "L1", "L2", "L3", "L4", "L5"), 名稱 = c("油", "米", "醬油", "米酒", "糖", "鹽", "冬粉與炊粉", "麵條", "沖泡飲", "罐頭_瓜", "罐頭_魚", "罐頭_筍菇", "罐頭_肉醬_多入裝", "罐頭_麵筋_多入裝", "飲料_汽水_家庭號", "飲料_甜品_多入裝", "泡麵_家庭號", "餅乾_堅果海苔", "餅乾_組合包", "餅乾_蘇打餅", "餅乾_洋芋片", "餅乾_中西小點"))
-  
   
   goodData <- sourceData #將原始資料複製一份
   goodData <- cbind(goodData, "Selected" = 0, "Preference" = 1) #新增被選擇欄位
@@ -35,23 +33,17 @@ for (loop in 1:10) {
   dietHabit <- "葷食" #葷食與素食的選擇
   userItemValues <- 18 #使用者需要的數量
   maxPrice <- 1500 #使用者金額
-  #exceptBrandList <- sample(c(levels(goodData$'廠牌'), NA), 1) #將要剔除的品牌
   exceptBrandList <- '大同' #將要剔除的品牌
-  #dietHabit <- sample(c("素食", "葷食"), 1) #葷食與素食的選擇
-  
-  
+
   #----Function----
   #偏好值與類別合併:
   #將使用者對商品種類的偏好與原始商品資料進行合併成一個Data Frame, 使原始資料有使用者對每個商品的品項偏好
   preference_match <- function(good_data, preference_table) {
-    #gene_list: 被選擇出的基因清單
-    #require_goods: 必要性的商品清單
-    #non_require_goods: 不必要性的商品清單
-    #user_preference: 使用者對商品種類的偏好
+    #good_data: 商品資料表
+    #preference_table: 商品種類偏好表
     
     for (i in 1:dim(preference_table)[1]) {
-      # good_data[good_data$種類==good_preference$category[i],]$Preference <- as.numeric(good_preference$preference[i])^2
-      good_data[good_data$種類==preference_table$category[i],]$Preference <- as.numeric(preference_table$preference[i])
+      good_data[good_data$種類==preference_table$category[i],]$Preference <- as.numeric(preference_table$preference[i]) #從商品資料表中挑選出與種類偏好表一樣的種類, 將該種類的偏好值放入至資料表中
     }
     return(good_data)
   }
@@ -79,9 +71,8 @@ for (loop in 1:10) {
     
     if(diet_habit_list=="素食") {
       good_data <- good_data[good_data$'葷素'==diet_habit_list,] #如果是素食就將屬於素食的產品篩選出來
-      good_data$'種類' <- factor(good_data$種類)
+      good_data$'種類' <- factor(good_data$種類)  #將種累轉換成因子型態
     }
-    
     return(good_data)
   }
   
@@ -97,7 +88,6 @@ for (loop in 1:10) {
     
     repeat {
       temp_good <- good_data #先將原始資料暫時給另外一個變數使用
-      
       for (i in 1:length(require_goods)) {
         get_index <- sample(which(temp_good$'種類'==require_goods[i] & temp_good$'Selected'!=1), 1) #隨機抓出符合種類並Selected欄位不等於1的列
         temp_good$'Selected'[get_index] <- 1 #將被選擇的欄位改為1    
@@ -113,7 +103,7 @@ for (loop in 1:10) {
       sum_weight <- sum(selected_good$'重量') #計算此基因的總重量
       
       if (sum_weight <= limit_weight) {
-        break
+        break #跳出
       }
     }
     return(selected_good) #回傳結果
@@ -124,9 +114,10 @@ for (loop in 1:10) {
   #必要性商品必定方在最前段, 選擇性商品必定放在後段
   create_chromosome <- function(gene_list) {
     #gene_list: 被選擇出的基因清單
+    
     for(i in 1:length(gene_list)) {
-      chromosome <- as.vector(gene_list[[i]][[1]]$'產品代號')
-      gene_list[[i]]["chromosome"] <- list(chromosome) 
+      chromosome <- as.vector(gene_list[[i]][[1]]$'產品代號') #將商品代號轉換成項量型態
+      gene_list[[i]]["chromosome"] <- list(chromosome) #將染色體加入到名稱為chromosome的索引中
     }
     return(gene_list)
   }
@@ -137,8 +128,8 @@ for (loop in 1:10) {
     #gene_list: 被選擇出的基因清單
     
     for(i in 1:length(gene_list)) {
-      sum_weight <- sum(gene_list[[i]][[1]]$'重量')
-      gene_list[[i]]["totalWeight"] <- list(sum_weight) 
+      sum_weight <- sum(gene_list[[i]][[1]]$'重量') #計算該染色體中的所有商品之重量總合
+      gene_list[[i]]["totalWeight"] <- list(sum_weight) #將總重量加入到名稱為totalWeight的索引中
     }
     return(gene_list)
   }
@@ -150,20 +141,20 @@ for (loop in 1:10) {
     #require_goods: 必要性的商品清單
     #non_require_goods: 不必要性的商品清單
     #user_preference: 使用者對商品種類的偏好
-    n <- which(preference_table$preference!=100)
-    preference_list <- preference_table$preference[n]
     
-    # max_preference <- max(preference_table$preference)
+    n <- which(preference_table$preference!=100) #從商品種類偏好中選擇出偏好值不等於100的索引
+    preference_list <- preference_table$preference[n] #抓出商品種的類偏好值中不等於100的值
+    
     max_preference <- max(preference_list)
     for(i in 1:length(gene_list)) {
       reuslt <- 1
       for (k in 1:sum(length(require_goods), non_require_values)) {
         temp_preferenced <- 1+as.numeric((gene_list[[i]][[1]]$'Preference'[k])^2 - 1) / sum((1:max_preference)^2) #偏好的計算公式
-        sum_preferenced <- sum(gene_list[[i]][[1]]$'Preference')
-        reuslt <- reuslt*temp_preferenced
+        sum_preferenced <- sum(gene_list[[i]][[1]]$'Preference') #計算總偏好值
+        reuslt <- reuslt*temp_preferenced #將每個基因的商品種類適應函數進行相乘
       }
-      gene_list[[i]]["fitPreference"] <- list(reuslt)
-      gene_list[[i]]["totalPreference"] <- sum_preferenced
+      gene_list[[i]]["fitPreference"] <- list(reuslt) #將商品種類適應函數加入到名稱為fitPreference的索引中
+      gene_list[[i]]["totalPreference"] <- sum_preferenced #將總偏好加入到名稱為Preference的索引中
     }
     return(gene_list)
   }
@@ -191,8 +182,8 @@ for (loop in 1:10) {
         # reuslt <- reuslt + 3*100
         reuslt <- reuslt + 3 #剩下結果將給予懲罰值3
       }
-      gene_list[[i]]["fitVolume"] <- reuslt 
-      gene_list[[i]]["totalVolume"] <- sum_volume 
+      gene_list[[i]]["fitVolume"] <- reuslt #將體積適應函數加入到名稱為fitVolume的索引中
+      gene_list[[i]]["totalVolume"] <- sum_volume #將總體積加入到名稱為totalVolume的索引中
     }
     return(gene_list)
   }
@@ -217,8 +208,8 @@ for (loop in 1:10) {
         reuslt <- reuslt + 3
         # reuslt <- reuslt + 3*100
       }
-      gene_list[[i]]["fitPrice"] <- reuslt
-      gene_list[[i]]["totalPrice"] <- sum_price
+      gene_list[[i]]["fitPrice"] <- reuslt #將價格適應函數加入到名稱為fitPrice的索引中
+      gene_list[[i]]["totalPrice"] <- sum_price #將總價格加入到名稱為totalPrice的索引中
     }
     return(gene_list)
   }
@@ -227,12 +218,10 @@ for (loop in 1:10) {
   fitness_total <- function(gene_list) {
     #gene_list: 被選擇出的基因清單
     
-    sum_fit <- unlist(lapply(gene_list, function(x) x$fitVolume*x$fitPrice))
-    
     for (i in 1:length(gene_list)) {
-      sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference'
-      # sum_fit <- (gene_list[[i]]$'fitVolume'*0.1) * (gene_list[[i]]$'fitPrice'*0.8) * (gene_list[[i]]$'fitPreference'*0.1)
-      gene_list[[i]]["totalFit"] <- sum_fit
+      sum_fit <- gene_list[[i]]$'fitVolume'*gene_list[[i]]$'fitPrice'*gene_list[[i]]$'fitPreference' #計算總體適應函數
+      # sum_fit <- (gene_list[[i]]$'fitVolume'*0.1) * (gene_list[[i]]$'fitPrice'*0.8) * (gene_list[[i]]$'fitPreference'*0.1) #權重值的設訂
+      gene_list[[i]]["totalFit"] <- sum_fit #將總體適應函數格加入到名稱為totalFit的索引中
     }
     return(gene_list)
   }
@@ -248,14 +237,13 @@ for (loop in 1:10) {
     for (i in 1:pop_amount) {
       compare_list <- sample(gene_list, 2) #隨機挑選兩個染色體
       if (compare_list[[1]]$'totalFit'<compare_list[[2]]$'totalFit') {
-        result[[i]] <- compare_list[[1]]
+        result[[i]] <- compare_list[[1]] #如果染色體1的總體適應函數 < 染色體2的總體適應函數, 染色體1獲勝
       } else if (compare_list[[1]]$'totalFit'>compare_list[[2]]$'totalFit') {
-        result[[i]] <- compare_list[[2]]
+        result[[i]] <- compare_list[[2]] #如果染色體1的總體適應函數 > 染色體2的總體適應函數, 染色體2獲勝
       } else {
-        result[[i]] <- sample(compare_list, 1)[[1]]
+        result[[i]] <- sample(compare_list, 1)[[1]] #如果染色體1的總體適應函數 == 染色體2的總體適應函數, 隨機取染色體
       }
     }
-    
     return(result)
   }
   
@@ -271,15 +259,14 @@ for (loop in 1:10) {
     for (i in 1:(pop_amount-length(elite_list))) {
       compare_list <- sample(gene_list, 2) #隨機挑選兩個染色體
       if (compare_list[[1]]$'totalFit'<compare_list[[2]]$'totalFit') {
-        result[[i]] <- compare_list[[1]]
+        result[[i]] <- compare_list[[1]] #如果染色體1的總體適應函數 < 染色體2的總體適應函數, 染色體1獲勝
       } else if (compare_list[[1]]$'totalFit'>compare_list[[2]]$'totalFit') {
-        result[[i]] <- compare_list[[2]]
+        result[[i]] <- compare_list[[2]] #如果染色體1的總體適應函數 > 染色體2的總體適應函數, 染色體2獲勝
       } else {
-        result[i] <- sample(compare_list, 1)
+        result[i] <- sample(compare_list, 1) #如果染色體1的總體適應函數 == 染色體2的總體適應函數, 隨機取染色體
       }
     }
-    
-    result <- append(result, elite_list)
+    result <- append(result, elite_list) #將獲勝的染色體與精英染色體合併起來
     return(result)
   }
   
@@ -298,22 +285,27 @@ for (loop in 1:10) {
     for (i in 1:pop_amount) {
       compare_list <- sample(gene_list, 2) #隨機挑選兩個染色體
       if (compare_list[[1]]$'totalFit'<compare_list[[2]]$'totalFit') {
-        result[[i]] <- compare_list[[1]]
+        result[[i]] <- compare_list[[1]] #如果染色體1的總體適應函數 < 染色體2的總體適應函數, 染色體1獲勝
       } else if (compare_list[[1]]$'totalFit'>compare_list[[2]]$'totalFit') {
-        result[[i]] <- compare_list[[2]]
+        result[[i]] <- compare_list[[2]] #如果染色體1的總體適應函數 > 染色體2的總體適應函數, 染色體2獲勝
       } else {
-        result[[i]] <- sample(compare_list, 1)
+        result[[i]] <- sample(compare_list, 1) #如果染色體1的總體適應函數 == 染色體2的總體適應函數, 隨機取染色體
       }
     }
-    
     return(result)
   }
   
   
   #交配(雙點交配)-需考慮適應函數值(包含懲罰值)、交配率和重量限制
   cross_over <- function(good_data, gene_list, require_goods, non_require_goods, non_require_values, cross_rate) {
-    get_chrom_length <- length(require_goods)+non_require_values #取得染色體長度
+    #good_data: 原始商品資料集
+    #gene_list: 被選擇出的基因清單
+    #require_goods: 必要性的商品清單
+    #non_require_goods: 不必要性的商品清單
+    #non_require_values: 不必要性的商品數量
+    #cross_rate: 交配率
     
+    get_chrom_length <- length(require_goods)+non_require_values #取得染色體長度
     for (i in 1:length(gene_list)) {
       gene_list[[i]]["crossState"] <- 0 #先給予交配狀態, 0表示未交配, 1表示已交配
     }
@@ -358,17 +350,17 @@ for (loop in 1:10) {
           
           
           if(length(which(duplicated(tempChrom_A[[1]]$'種類'))) == 0 & length(which(duplicated(tempChrom_B[[1]]$'種類'))) == 0){
-            tempChrom_A$'crossState' <- 1
-            tempChrom_B$'crossState' <- 1
-            gene_list[[get_index[1]]] <- tempChrom_A
-            gene_list[[get_index[2]]] <- tempChrom_B
+            tempChrom_A$'crossState' <- 1 #標記該染色體已交配過
+            tempChrom_B$'crossState' <- 1 #標記該染色體已交配過
+            gene_list[[get_index[1]]] <- tempChrom_A #取代掉原本的父母
+            gene_list[[get_index[2]]] <- tempChrom_B #取代掉原本的父母
             break
           }
         }
       } else {
         #亂數大於交配率, 則不進行交配
-        gene_list[[get_index[1]]]$'crossState' <- 1
-        gene_list[[get_index[2]]]$'crossState' <- 1
+        gene_list[[get_index[1]]]$'crossState' <- 1 #標記該染色體已交配過
+        gene_list[[get_index[2]]]$'crossState' <- 1 #標記該染色體已交配過
       }
     }
     return(gene_list)
@@ -428,8 +420,6 @@ for (loop in 1:10) {
     condition_pop <- condition_pop[order(sapply(condition_pop, function(x) x$totalFit), decreasing=FALSE)] #將人口按照適應函數遞減排序
     return(condition_pop)
   }
-  
-  
   
   
   # #將符合體重的群組合併起來

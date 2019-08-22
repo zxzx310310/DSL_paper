@@ -6,32 +6,35 @@ DSL_paper
  │ ├ goodArray.txt   //C專用txt讀取檔案
  │ ├ readtext.c   //雛型檔-鈞哥
  │ └ 執行指令.txt   //執行指令檔
- ├ assets
- │ ├ StoreData.csv
- │ ├ StoreData.txt
- │ ├ bundlingTable.csv
- │ ├ categoryTable.csv //種類ID對照表
- │ ├ columnNameTable.csv //欄位ID對照表
+ ├ assets_py
+ │ ├ StoreData.csv    //原始商品csv資料表
+ │ ├ StoreData.txt    //原始商品txt資料表
+ │ ├ bundlingTable.csv    //搭售資料表
+ │ ├ categoryTable.csv    //種類ID對照表
+ │ ├ columnNameTable.csv    //欄位ID對照表
  │ ├ goodArray.csv
- │ ├ itemIDTable.csv //品項ID對照表
+ │ ├ itemIDTable.csv    //品項ID對照表
  │ ├ itemId.csv
  │ ├ org_StoreData.csv
  │ ├ preferenceTable.csv
- │ ├ 商品資料庫.csv
- │ ├ 商品資料庫_111.csv
- │ ├ 商品資料庫_222.csv
- │ ├ 商品資料庫_333.csv
- │ ├ 商品資料庫_444.csv
- │ ├ 商品資料庫_555.csv
- │ └ 商品資料庫_666.csv
+ │ ├ 商品資料庫.csv    //777筆商品資料
+ │ ├ 商品資料庫_111.csv    //111筆商品資料
+ │ ├ 商品資料庫_222.csv    //222筆商品資料
+ │ ├ 商品資料庫_333.csv    //333筆商品資料
+ │ ├ 商品資料庫_444.csv    //444筆商品資料
+ │ ├ 商品資料庫_555.csv    //555筆商品資料
+ │ └ 商品資料庫_666.csv    //666筆商品資料
  ├ assets
  │   ├ old    //舊資料集
  │   │  ├ StoreData.csv
  │   │  ├ StoreData.txt
  │   │  └ 商品資料庫.csv
- │   ├ StoreData.csv
- │   ├ StoreData.txt
+ │   ├ StoreData.csv    //原始商品csv資料表
+ │   ├ StoreData.txt    //原始商品csv資料表
  │   ├ preferenceTable.csv    //商品偏好表
+ │   ├ preferenceTable_s.csv    //商品偏好表_小資料測試用
+ │   ├ bundlingTable.csv    //搭售資料表
+ │   ├ 商品資料庫_s.csv    //商品原始檔案-30項
  │   ├ 商品資料庫.csv    //商品原始檔案-777項
  │   ├ 商品資料庫_111.csv    //商品切割檔案-111項
  │   ├ 商品資料庫_222.csv    //商品切割檔案-222項
@@ -40,19 +43,26 @@ DSL_paper
  │   ├ 商品資料庫_555.csv    //商品切割檔案-555項
  │   └ 商品資料庫_666.csv    //商品切割檔案-666項
  ├ BBP.R
+ ├ exhaustion.r　　//窮舉法程式碼_小資料測試用
+ ├ cupy_GA.py　　//python的cupy套件測試
+ ├ cupy_GA2.py　　//python的cupy套件測試2
+ ├ cupy_test.py　　//python的cupy套件測試檔案
+ ├ GPU_MOGA_BBP.py　　//python的pycuda套件測試
  ├ MOGA_BBP_v1.R    //舊程式碼
  ├ MOGA_BBP_v2.R    //主要程式碼
  ├ MOGA_BBP_v2_for_loop.R    //針對MOGA_BBP_v2.R之迴圈測試檔案
  ├ MOGA_BBP_v3.R    //為MOGA_BBP_v2.R之延續測試(懲罰值、權重)
  ├ MOGA_BBP_v3_for_loop.R    //MOGA_BBP_v3.R之迴圈測試檔案
  ├ MOGA_BBP_v4.R    //MOGA_BBP_v2.R之新增搭售方法
- ├ MOGA_BBP_v5.R    //同一類商品僅能選一項
- ├ MOGA_BBP_v5_for_loop.R    //針對MOGA_BBP_v5.R之迴圈測試檔案
- ├ README
- ├ conference.R
- ├ numba_Test_GA.py
- ├ numba_gpu.py 
- ├ numpy_GA.py //新增numpy版本的GA
- └ rBinPackingProblem.r
+ ├ MOGA_BBP_v5.R    //同一類商品僅能選一項(最終程式碼)
+ ├ MOGA_BBP_v5_for_loop.R    //針對MOGA_BBP_v5.R之迴圈測試檔案(最終程式碼)
+ ├ README    //請先閱讀我
+ ├ conference.R    //對研討會時的程式碼(階段性成果)
+ ├ numba_Test_GA.py    //python之numba套件測試檔案1
+ ├ numba_gpu.py    //python之numba套件測試檔案2
+ ├ numpy_GA.py    //新增numpy版本的GA
+ ├ JYC_BPP.py    //本方法與莊之比較的程式碼
+ ├ YCC_BPP.py    //莊的程式碼
+ └ rBinPackingProblem.r    //無用程式碼
 
-By 2019/05/19 Jacky Chen
+By 2019/08/22 Jacky Chen
